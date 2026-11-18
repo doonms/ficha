@@ -35,7 +35,7 @@ const sections=[
   {title:'Ações livres e reações',repeat:'reacoes',columns:['Nome','Tipo','Acionamento','Traços','Página','Descrição']}
  ]},
  {id:'anotacoes',name:'Anotações',description:'Espaço livre para o personagem',cards:[
-  {title:'Anotações',fields:['Anotações'],long:true}
+  {title:'Anotações',notes:true}
  ]}
 ];
 let data={fields:{},lists:{}};
@@ -187,7 +187,11 @@ function renderTalent(item,index,list,columns,forPrint=false){
 }
 function renderCard(card,forPrint=false){
  let body='';
- if(card.bendings){
+ if(card.notes){
+  const items=Array.isArray(data.lists.anotacoes)?data.lists.anotacoes:[];
+  body=items.length?'<div class="note-list">'+items.map((item,index)=>'<div class="note-entry"><div class="repeat-head"><strong>Nota '+(index+1)+'</strong><button type="button" class="remove-btn" data-remove="anotacoes" data-index="'+index+'" aria-label="Remover nota '+(index+1)+'">Remover</button></div>'+field('Título','list:anotacoes:'+index+':Titulo','text',false,item.Titulo||'')+field('Texto','list:anotacoes:'+index+':Texto','textarea',true,item.Texto||'')+'</div>').join('')+'</div>':'<p class="empty">Nenhuma anotação ainda.</p>';
+  body+='<button type="button" class="small-btn" data-add="anotacoes">+ Adicionar anotação</button>';
+ }else if(card.bendings){
   const items=data.lists.tecnicas||[];
   body=items.length?items.map((item,index)=>renderBending(item,index,forPrint)).join(''):'<p class="empty">Nenhuma dobra adicionada.</p>';
   body+='<button type="button" class="small-btn" data-add="tecnicas">+ Adicionar dobra</button>';
@@ -238,7 +242,16 @@ const bendingBannerObserver=new ResizeObserver(entries=>{
   target.style.setProperty('--rotated-banner-height',target.offsetWidth+'px');
  }
 });
+function migrateNotes(){
+ const legacy=data.fields.anotacoes;
+ if(typeof legacy!=='string'||!legacy.trim())return;
+ if(!Array.isArray(data.lists.anotacoes))data.lists.anotacoes=[];
+ data.lists.anotacoes.unshift({Titulo:'',Texto:legacy});
+ delete data.fields.anotacoes;
+ save();
+}
 function render(){
+ migrateNotes();
  const section=sections.find(s=>s.id===active);
  if(active==='tecnicas')ensureBendingBanners();
  bendingBannerObserver.disconnect();
@@ -350,7 +363,7 @@ document.addEventListener('click',e=>{
  const deleteBanner=e.target.closest('[data-delete-banner]');if(deleteBanner){const [element,id]=deleteBanner.dataset.deleteBanner.split(':');const list=data.fields.bannersPersonalizados?.[element];if(list){const index=list.findIndex(item=>item.id===id);if(index>=0){list.splice(index,1);for(const item of data.lists.tecnicas||[])if(item.Banner==='custom:'+id){item.Banner=randomBanner(element);item.BannerElement=element}save();render()}}}
  const rank=e.target.closest('[data-rank]');if(rank){const key=rankKeyFor(['CD de dobra',...Object.keys(defenseAttributes),...Object.keys(skillAttributes)].find(n=>slug(n)===rank.dataset.rank));data.fields[key]=data.fields[key]===rank.dataset.rankValue?'':rank.dataset.rankValue;save();const row=rank.closest('.prof-row');row.querySelectorAll('[data-rank]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.rankValue===data.fields[key])));refreshTotals()}
  const tab=e.target.closest('[data-tab]');if(tab)selectTab(tab.dataset.tab);
- const add=e.target.closest('[data-add]');if(add){const element=data.fields.planoFundo==='osel'?'':data.fields.elemento;const item=add.dataset.add==='tecnicas'?{Grau:'1',Tipo:'Movimento',Teste:'Acerto',Elemento:element,Banner:randomBanner(element),BannerElement:element}:{};(data.lists[add.dataset.add]??=[]).push(item);if(add.dataset.add==='tecnicas')expandedBendings.add(item);if(talentLists.has(add.dataset.add))expandedTalents.add(item);save();render()}
+ const add=e.target.closest('[data-add]');if(add){const element=data.fields.planoFundo==='osel'?'':data.fields.elemento;const item=add.dataset.add==='tecnicas'?{Grau:'1',Tipo:'Movimento',Teste:'Acerto',Elemento:element,Banner:randomBanner(element),BannerElement:element}:{};(data.lists[add.dataset.add]??=[]).push(item);if(add.dataset.add==='tecnicas')expandedBendings.add(item);if(talentLists.has(add.dataset.add))expandedTalents.add(item);save();render();if(add.dataset.add==='anotacoes')document.querySelector('[data-field="list:anotacoes:'+(data.lists.anotacoes.length-1)+':Titulo"]')?.focus()}
  const remove=e.target.closest('[data-remove]');if(remove){data.lists[remove.dataset.remove].splice(Number(remove.dataset.index),1);save();render()}
 });
 const menu=document.querySelector('#menu'),menuBtn=document.querySelector('#menuBtn');
