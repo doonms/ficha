@@ -45,6 +45,7 @@ let active='identidade';
 const expandedBendings=new WeakSet();
 const expandedTalents=new WeakSet();
 const talentLists=new Set(['ancestralidade','talentosPericia','talentosGerais','classe','bonus']);
+const combatCards=new Set(sections.find(section=>section.id==='combate').cards);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const slug=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 const modifier=value=>value===''||value==null?'—':(Math.floor((Number(value)-10)/2)>0?'+':'')+Math.floor((Number(value)-10)/2);
@@ -55,6 +56,16 @@ const backgroundFiles={agua:'água plano.png',ar:'ar plano.png',fogo:'fogo plano
 const bannerLabels={agua:'água',ar:'ar',fogo:'fogo',terra:'terra'};
 const bannerCounts={agua:5,ar:5,fogo:7,terra:5};
 const bannerFiles={agua:'banner água 1.png',ar:'banner ar 1.png',fogo:'banner fogo 1.png',terra:'banner terra 1.png'};
+function visualElement(){return data.fields.planoFundo==='osel'?'avatar':data.fields.elemento||'neutral'}
+const sealMarks={
+ agua:'<path d="M32 15c-4 6-8 9-8 14a8 8 0 0 0 16 0c0-5-4-8-8-14Z"/><path d="M15 40c5-6 11-6 17 0s12 6 17 0M15 47c5-6 11-6 17 0s12 6 17 0"/>',
+ terra:'<path d="M14 44h36M17 44l11-21 7 12 5-9 8 18M22 50h20"/>',
+ fogo:'<path d="M32 13c3 10 12 13 12 24 0 8-5 14-12 14S20 45 20 37c0-6 4-10 6-14 1 4 3 6 6 8-1-7 0-12 0-18Z"/><path d="M32 36c-3 3-4 5-4 8a4 4 0 0 0 8 0c0-3-1-5-4-8Z"/>',
+ ar:'<path d="M17 35c3-7 10-11 17-9 5 1 7 6 5 10-2 4-8 4-10 1-2-3 1-6 4-5M16 43c8 6 20 6 29-1M20 25c2-4 5-6 9-8"/>',
+ avatar:'<circle cx="32" cy="32" r="9"/><circle cx="32" cy="17" r="5" fill="#b47c3a" stroke="none"/><circle cx="47" cy="32" r="5" fill="#b45134" stroke="none"/><circle cx="32" cy="47" r="5" fill="#647b4d" stroke="none"/><circle cx="17" cy="32" r="5" fill="#31759c" stroke="none"/>',
+ neutral:'<path d="M32 15 49 32 32 49 15 32Z"/><circle cx="32" cy="32" r="5"/>'
+};
+function elementSeal(element){return '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><circle cx="32" cy="32" r="29"/><circle cx="32" cy="32" r="25" opacity=".55"/>'+(sealMarks[element]||sealMarks.neutral)+'</svg>'}
 function bendingElement(item){return data.fields.planoFundo==='osel'?item.Elemento:data.fields.elemento}
 function bannerChoices(element){
  if(!bannerCounts[element])return [];
@@ -102,6 +113,8 @@ function currentArtwork(){
 function applyBackground(){
  const element=data.fields.planoFundo==='osel'?'':data.fields.elemento||'';
  document.body.dataset.element=element;
+ document.body.dataset.avatar=String(data.fields.planoFundo==='osel');
+ document.querySelector('#headerSeal').innerHTML=elementSeal(visualElement());
  const artwork=currentArtwork();
  const url=artwork?'url("'+artwork+'")':'none';
  document.documentElement.style.setProperty('--scene-url',url);
@@ -234,7 +247,10 @@ function renderCard(card,forPrint=false){
  }else{
   body='<div class="grid">'+card.fields.map(name=>field(name,slug(name),card.long?'textarea':name==='Velocidade (metros)'?'number':'text',card.long,data.fields[slug(name)]||'')).join('')+'</div>';
  }
- return '<section class="card '+(card.composite?'combat-saves':'')+'"><h2>'+esc(card.title)+'</h2>'+body+'</section>';
+ const classes=['card'];
+ if(card.composite)classes.push('combat-saves');
+ if(combatCards.has(card)){classes.push('combat-card');if(card.vitals)classes.push('combat-card-vitals');if(card.defenseGroup)classes.push('combat-card-defense')}
+ return '<section class="'+classes.join(' ')+'"><h2>'+esc(card.title)+'</h2>'+body+'</section>';
 }
 const bendingBannerObserver=new ResizeObserver(entries=>{
  for(const {target} of entries){
@@ -256,7 +272,8 @@ function render(){
  if(active==='tecnicas')ensureBendingBanners();
  bendingBannerObserver.disconnect();
  document.querySelector('#tabs').innerHTML=sections.map(s=>'<button data-tab="'+s.id+'" class="'+(s.id===active?'active':'')+'" aria-current="'+(s.id===active?'page':'false')+'">'+s.name+'</button>').join('');
- document.querySelector('#content').innerHTML='<div class="section-title"><h1>'+section.name+'</h1><p>'+section.description+'</p></div>'+section.cards.map(card=>renderCard(card)).join('');
+ const heading=active==='combate'?'<div class="section-title combat-section-title"><span class="combat-section-seal" aria-hidden="true">'+elementSeal(visualElement())+'</span><div class="combat-section-copy"><small>REGISTRO DE COMBATE</small><h1>'+section.name+'</h1><p>'+section.description+'</p></div></div>':'<div class="section-title"><h1>'+section.name+'</h1><p>'+section.description+'</p></div>';
+ document.querySelector('#content').innerHTML=heading+section.cards.map(card=>renderCard(card)).join('');
  document.querySelectorAll('#content .bending-entry.has-banner').forEach(entry=>{
   entry.style.setProperty('--rotated-banner-width',entry.offsetHeight+'px');
   entry.style.setProperty('--rotated-banner-height',entry.offsetWidth+'px');
