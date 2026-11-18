@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3e9d3">
+  <meta name="description" content="Ficha de personagem Avateixons para celular">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="attributes.css">
+  <link rel="stylesheet" href="proficiency.css">
+  <link rel="stylesheet" href="backgrounds.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="bendings.css">
+  <title>Ficha Avateixons</title>
+</head>
+<body>
+  <header class="top">
+    <div class="brand" aria-label="Ficha Avateixons"><span class="emblem" aria-hidden="true">◈</span></div>
+    <div class="header-identity"><label><small>PERSONAGEM</small><input id="heroName" class="header-name" aria-label="Nome do personagem" placeholder="Nome do personagem"></label><label class="header-level">Nível <input id="heroLevelInput" type="number" min="1" inputmode="numeric" aria-label="Nível do personagem" placeholder="1"></label></div>
+    <button id="menuBtn" class="icon-button" aria-label="Abrir opções" aria-expanded="false">⋮</button>
+    <div id="menu" class="menu" hidden>
+      <button id="exportBtn">Exportar ficha (.json)</button>
+      <button id="importBtn">Importar ficha (.json)</button>
+      <button id="printBtn">Imprimir ficha (A4)</button>
+      <button id="clearBtn">Limpar ficha</button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden>
+    </div>
+  </header>
+  <main>
+    <div id="elementBanner" class="element-banner" role="img" hidden></div>
+    <nav id="tabs" class="tabs" aria-label="Seções da ficha"></nav>
+    <div id="content" class="content"></div>
+    <p class="save-note" id="saveNote" role="status">As alterações são salvas neste aparelho.</p>
+  </main>
+  <dialog id="bannerDialog" class="banner-dialog">
+    <h2>Elemento do banner</h2>
+    <p>Escolha a dobra que receberá a imagem.</p>
+    <div class="banner-dialog-options">
+      <button type="button" data-banner-upload-element="agua">Água</button>
+      <button type="button" data-banner-upload-element="ar">Ar</button>
+      <button type="button" data-banner-upload-element="fogo">Fogo</button>
+      <button type="button" data-banner-upload-element="terra">Terra</button>
+    </div>
+    <button type="button" id="cancelBannerDialog" class="small-btn">Cancelar</button>
+  </dialog>
+  <input id="bannerUploadFile" type="file" accept="image/*" hidden>
+  <div id="printSheet" aria-hidden="true"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
