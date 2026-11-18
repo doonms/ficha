@@ -73,7 +73,7 @@ body[data-avatar=true]{--element-stroke:url("ornaments/avatar.svg");--frame-radi
 .combat-card h2{background-image:var(--element-stroke);background-size:55px 8px;background-repeat:repeat-x;background-position:left bottom;padding-bottom:16px}
 body[data-element=agua] .combat-card h2::before{border:2px solid var(--accent);border-radius:70% 70% 70% 0;background:var(--accent-soft);transform:rotate(-45deg);box-shadow:none}
 body[data-element=terra] .combat-card h2::before{border:2px solid var(--accent);border-radius:1px;background:var(--accent-soft);transform:none;box-shadow:none}
-body[data-element=fogo] .combat-card h2::before{border:0;clip-path:polygon(50% 0,100% 100%,0 100%);border-radius:0;background:var(--accent);transform:none;box-shadow:none}
+body[data-element=fogo] .combat-card h2::before{width:17px;height:17px;border:0;clip-path:none;border-radius:0;background:url("ornaments/chama.svg") center/contain no-repeat;transform:none;box-shadow:none}
 body[data-element=ar] .combat-card h2::before{border:2px solid var(--accent);border-left-color:transparent;border-radius:50%;background:transparent;transform:rotate(-35deg);box-shadow:none}
 body[data-avatar=true] .combat-card h2::before{background:conic-gradient(#31759c 0 25%,#647b4d 25% 50%,#b45134 50% 75%,#b47c3a 75%);box-shadow:0 0 0 2px #fffaf0,0 0 0 3px var(--line)}
 .combat-vitals label{position:relative;overflow:hidden;border:2px solid var(--accent);border-radius:var(--frame-radius);padding-top:16px;background-image:var(--element-stroke),linear-gradient(145deg,#fffdf5,var(--accent-soft));background-size:55px 8px,auto;background-position:left top,center;background-repeat:repeat-x,no-repeat}
