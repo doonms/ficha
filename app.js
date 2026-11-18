@@ -169,7 +169,7 @@ function renderBending(item,index,forPrint=false){
  const bannerOptions=bannerChoices(element);
  const elementControl=data.fields.planoFundo==='osel'?bendingSelect('Elemento',index,'Elemento',[['','Escolher'],['agua','Água'],['ar','Ar'],['fogo','Fogo'],['terra','Terra']],element):'';
  const bannerControl=bannerOptions.length?bendingSelect('Plano de fundo',index,'Banner',bannerOptions,item.Banner||'1'):'';
- const background=banner?' style="background-image:linear-gradient(#fff8e64d,#fff8e666),url(&quot;'+banner+'&quot;)"':'';
+ const background=banner?' style="--bending-banner-image:url(&quot;'+banner+'&quot;)"':'';
  const result=test==='CD'?'<div class="bending-result"><span>CD de dobra</span><output data-bending-entry-dc>'+bendingDC()+'</output></div>':'<div class="bending-results">'+[[0,'1ª'],[5,'2ª'],[10,'3ª']].map(([penalty,label])=>'<div><span>'+label+'</span><output data-bending-attack="'+penalty+'">'+turnBending(penalty)+'</output></div>').join('')+'</div>';
  const diceRows=(Array.isArray(item.Dados)?item.Dados:[]).map((die,dieIndex)=>'<div class="die-row"><select data-die-owner="'+index+'" data-die-index="'+dieIndex+'" aria-label="Dado '+(dieIndex+1)+'">'+diceOptions.map(([value,label])=>'<option value="'+value+'" '+(die===value?'selected':'')+'>'+label+'</option>').join('')+'</select><button type="button" class="remove-btn" data-remove-die="'+index+'" data-die-index="'+dieIndex+'">Remover</button></div>').join('');
  const dicePanel='<div class="dice-panel"><div class="dice-panel-head"><strong>Dados</strong><button type="button" class="small-btn" data-add-die="'+index+'" aria-label="Adicionar dado">+</button></div>'+diceRows+'<div class="damage-summary"><span>Dano</span><output data-damage-index="'+index+'">'+damageFor(item)+'</output></div></div>';
@@ -178,7 +178,7 @@ function renderBending(item,index,forPrint=false){
  const details='<div class="bending-details">'+['Alvo','Alcance','Área','Duração'].map(name=>field(name,'list:tecnicas:'+index+':'+name,'text',false,item[name]||'')).join('')+'</div>';
  const damage=damageFor(item);
  const summary='<summary class="bending-summary"><span class="bending-summary-main"><strong data-bending-summary-name="'+index+'">'+esc(item.Nome?.trim()||'Dobra '+(index+1))+'</strong><span class="bending-summary-level">Nível '+esc(item.Grau||'1')+'</span></span><span class="bending-summary-damage" data-bending-summary-damage="'+index+'"'+(damage==='—'?' hidden':'')+'>'+esc(damage==='—'?'':damage)+'</span><span class="bending-chevron" aria-hidden="true"></span></summary>';
- return '<details class="bending-entry" data-bending-index="'+index+'"'+(forPrint||expandedBendings.has(item)?' open':'')+background+'>'+summary+'<div class="bending-entry-body"><div class="repeat-head"><span>Dobra '+(index+1)+'</span><button type="button" class="remove-btn" data-remove="tecnicas" data-index="'+index+'">Remover</button></div>'+field('Nome','list:tecnicas:'+index+':Nome','text',false,item.Nome||'')+'<div class="bending-controls">'+elementControl+bendingSelect('Grau',index,'Grau',gradeOptions,item.Grau||'1')+bendingSelect('Tipo',index,'Tipo',[['Movimento','Movimento'],['Técnica','Técnica']],type)+(type==='Técnica'?bendingSelect('Pontos de foco',index,'Foco',Array.from({length:5},(_,n)=>[String(n+1),String(n+1)]),item.Foco||'1'):'')+bendingSelect('Usa',index,'Teste',[['Acerto','Acerto'],['CD','CD']],test)+bannerControl+'</div><div class="bending-meta"><span>Nível de dobra <output data-bending-level>'+bendingLevel()+'</output></span><strong data-elevation-index="'+index+'">'+elevationFor(item)+'</strong></div>'+result+details+dicePanel+elevationPanel+field('Descrição','list:tecnicas:'+index+':Descrição','textarea',true,item.Descrição||'')+'</div></details>';
+ return '<details class="bending-entry'+(banner?' has-banner':'')+'" data-bending-index="'+index+'"'+(forPrint||expandedBendings.has(item)?' open':'')+background+'>'+summary+'<div class="bending-entry-body"><div class="repeat-head"><span>Dobra '+(index+1)+'</span><button type="button" class="remove-btn" data-remove="tecnicas" data-index="'+index+'">Remover</button></div>'+field('Nome','list:tecnicas:'+index+':Nome','text',false,item.Nome||'')+'<div class="bending-controls">'+elementControl+bendingSelect('Grau',index,'Grau',gradeOptions,item.Grau||'1')+bendingSelect('Tipo',index,'Tipo',[['Movimento','Movimento'],['Técnica','Técnica']],type)+(type==='Técnica'?bendingSelect('Pontos de foco',index,'Foco',Array.from({length:5},(_,n)=>[String(n+1),String(n+1)]),item.Foco||'1'):'')+bendingSelect('Usa',index,'Teste',[['Acerto','Acerto'],['CD','CD']],test)+bannerControl+'</div><div class="bending-meta"><span>Nível de dobra <output data-bending-level>'+bendingLevel()+'</output></span><strong data-elevation-index="'+index+'">'+elevationFor(item)+'</strong></div>'+result+details+dicePanel+elevationPanel+field('Descrição','list:tecnicas:'+index+':Descrição','textarea',true,item.Descrição||'')+'</div></details>';
 }
 function renderTalent(item,index,list,columns,forPrint=false){
  const summary='<summary class="talent-summary"><span class="talent-summary-main"><strong data-talent-summary-name="'+list+':'+index+'">'+esc(item.Nome?.trim()||'Talento '+(index+1))+'</strong><span data-talent-summary-level="'+list+':'+index+'">Nível '+esc(item.Nível||'—')+'</span></span><span class="talent-chevron" aria-hidden="true"></span></summary>';
@@ -197,8 +197,9 @@ function renderCard(card,forPrint=false){
   body+='<button class="small-btn" data-add="'+card.repeat+'">+ Adicionar</button>';
  }else if(card.portrait){
   const selected=data.fields.planoFundo||'';
-  const artwork=currentArtwork()||'retrato-ar.png';
-  body='<figure class="portrait-frame"><img src="'+esc(artwork)+'" alt="Imagem do personagem"><figcaption>'+ (selected==='osel'&&data.fields.estadoAvatar?'Osel · Estado Avatar':'Retrato do personagem') +'</figcaption></figure>'+(selected==='osel'?'<button type="button" class="small-btn portrait-toggle" data-avatar-toggle>'+(data.fields.estadoAvatar?'Desativar Estado Avatar':'Ativar Estado Avatar')+'</button>':'');
+  const artwork=currentArtwork();
+  const prompt=selected==='none'?'Sem imagem de personagem':data.fields.elemento?'Selecione seu plano de fundo':'Selecione seu plano de fundo e tipo de dobra';
+  body=(artwork?'<figure class="portrait-frame"><img src="'+esc(artwork)+'" alt="Imagem do personagem"><figcaption>'+ (selected==='osel'&&data.fields.estadoAvatar?'Osel · Estado Avatar':'Retrato do personagem') +'</figcaption></figure>':'<div class="portrait-frame portrait-empty">'+prompt+'</div>')+(selected==='osel'?'<button type="button" class="small-btn portrait-toggle" data-avatar-toggle>'+(data.fields.estadoAvatar?'Desativar Estado Avatar':'Ativar Estado Avatar')+'</button>':'');
  }else if(card.vitals){
   body='<div class="combat-vitals">'+[['pvAtuais','PV atuais'],['pvMax','PV máximos'],['pvTemp','PV temporários']].map(([key,label])=>'<label><span>'+label+'</span><input data-key="'+key+'" type="number" inputmode="numeric" placeholder="0" value="'+esc(data.fields[key]??'')+'"></label>').join('')+'</div>';
  }else if(card.attribute){
@@ -231,11 +232,23 @@ function renderCard(card,forPrint=false){
  }
  return '<section class="card '+(card.composite?'combat-saves':'')+'"><h2>'+esc(card.title)+'</h2>'+body+'</section>';
 }
+const bendingBannerObserver=new ResizeObserver(entries=>{
+ for(const {target} of entries){
+  target.style.setProperty('--rotated-banner-width',target.offsetHeight+'px');
+  target.style.setProperty('--rotated-banner-height',target.offsetWidth+'px');
+ }
+});
 function render(){
  const section=sections.find(s=>s.id===active);
  if(active==='tecnicas')ensureBendingBanners();
+ bendingBannerObserver.disconnect();
  document.querySelector('#tabs').innerHTML=sections.map(s=>'<button data-tab="'+s.id+'" class="'+(s.id===active?'active':'')+'" aria-current="'+(s.id===active?'page':'false')+'">'+s.name+'</button>').join('');
  document.querySelector('#content').innerHTML='<div class="section-title"><h1>'+section.name+'</h1><p>'+section.description+'</p></div>'+section.cards.map(card=>renderCard(card)).join('');
+ document.querySelectorAll('#content .bending-entry.has-banner').forEach(entry=>{
+  entry.style.setProperty('--rotated-banner-width',entry.offsetHeight+'px');
+  entry.style.setProperty('--rotated-banner-height',entry.offsetWidth+'px');
+  bendingBannerObserver.observe(entry);
+ });
  document.querySelector('#heroName').value=data.fields['nome-do-personagem']||'';
  document.querySelectorAll('[data-key]').forEach(el=>el.value=data.fields[el.dataset.key]||'');
  document.querySelector('#heroLevelInput').value=data.fields.nivel||'';
