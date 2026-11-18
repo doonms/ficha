@@ -241,6 +241,33 @@ function render(){
  document.querySelector('#heroLevelInput').value=data.fields.nivel||'';
  applyBackground();
 }
+function selectTab(id){
+ if(!sections.some(section=>section.id===id))return;
+ active=id;
+ render();
+ const tabs=document.querySelector('#tabs');
+ const selected=tabs.querySelector('[data-tab="'+id+'"]');
+ if(selected)tabs.scrollTo({left:selected.offsetLeft-(tabs.clientWidth-selected.clientWidth)/2,behavior:'smooth'});
+ window.scrollTo(0,0);
+}
+const swipeArea=document.querySelector('#content');
+let swipeStart=null;
+swipeArea.addEventListener('touchstart',event=>{
+ if(!window.matchMedia('(max-width:700px)').matches||event.touches.length!==1||event.target.closest('input,textarea,select,button,[contenteditable="true"]')){swipeStart=null;return}
+ const touch=event.touches[0];
+ swipeStart={x:touch.clientX,y:touch.clientY};
+},{passive:true});
+swipeArea.addEventListener('touchend',event=>{
+ if(!swipeStart||event.changedTouches.length!==1)return;
+ const start=swipeStart;
+ swipeStart=null;
+ const touch=event.changedTouches[0];
+ const dx=touch.clientX-start.x,dy=touch.clientY-start.y;
+ if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.35)return;
+ const next=sections.findIndex(section=>section.id===active)+(dx<0?1:-1);
+ if(next>=0&&next<sections.length)selectTab(sections[next].id);
+},{passive:true});
+swipeArea.addEventListener('touchcancel',()=>{swipeStart=null},{passive:true});
 function save(){localStorage.setItem(KEY,JSON.stringify(data));document.querySelector('#saveNote').textContent='Ficha salva neste aparelho.'}
 document.addEventListener('input',e=>{
  const el=e.target;
@@ -309,7 +336,7 @@ document.addEventListener('click',e=>{
  const bannerElement=e.target.closest('[data-banner-upload-element]');if(bannerElement){pendingBannerElement=bannerElement.dataset.bannerUploadElement;document.querySelector('#bannerDialog').close();document.querySelector('#bannerUploadFile').click()}
  const deleteBanner=e.target.closest('[data-delete-banner]');if(deleteBanner){const [element,id]=deleteBanner.dataset.deleteBanner.split(':');const list=data.fields.bannersPersonalizados?.[element];if(list){const index=list.findIndex(item=>item.id===id);if(index>=0){list.splice(index,1);for(const item of data.lists.tecnicas||[])if(item.Banner==='custom:'+id){item.Banner=randomBanner(element);item.BannerElement=element}save();render()}}}
  const rank=e.target.closest('[data-rank]');if(rank){const key=rankKeyFor(['CD de dobra',...Object.keys(defenseAttributes),...Object.keys(skillAttributes)].find(n=>slug(n)===rank.dataset.rank));data.fields[key]=data.fields[key]===rank.dataset.rankValue?'':rank.dataset.rankValue;save();const row=rank.closest('.prof-row');row.querySelectorAll('[data-rank]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.rankValue===data.fields[key])));refreshTotals()}
- const tab=e.target.closest('[data-tab]');if(tab){active=tab.dataset.tab;render();window.scrollTo(0,0)}
+ const tab=e.target.closest('[data-tab]');if(tab)selectTab(tab.dataset.tab);
  const add=e.target.closest('[data-add]');if(add){const element=data.fields.planoFundo==='osel'?'':data.fields.elemento;const item=add.dataset.add==='tecnicas'?{Grau:'1',Tipo:'Movimento',Teste:'Acerto',Elemento:element,Banner:randomBanner(element),BannerElement:element}:{};(data.lists[add.dataset.add]??=[]).push(item);if(add.dataset.add==='tecnicas')expandedBendings.add(item);if(talentLists.has(add.dataset.add))expandedTalents.add(item);save();render()}
  const remove=e.target.closest('[data-remove]');if(remove){data.lists[remove.dataset.remove].splice(Number(remove.dataset.index),1);save();render()}
 });
