@@ -32,7 +32,7 @@
 body{--combat-pattern:repeating-linear-gradient(135deg,#a9803210 0 1px,transparent 1px 14px)}
 body[data-element=agua]{--combat-pattern:radial-gradient(ellipse at 95% 4%,#31759c17 0 18%,transparent 19%),radial-gradient(ellipse at 80% 10%,transparent 0 13%,#31759c0e 14% 15%,transparent 16%)}
 body[data-element=terra]{--combat-pattern:linear-gradient(135deg,transparent 0 87%,#647b4d12 87% 91%,transparent 91%),repeating-linear-gradient(90deg,#647b4d0c 0 1px,transparent 1px 24px)}
-body[data-element=fogo]{--combat-pattern:linear-gradient(130deg,transparent 0 82%,#b4513416 82% 88%,transparent 88%),linear-gradient(145deg,transparent 0 92%,#b47c3a14 92%)}
+body[data-element=fogo]{--combat-pattern:radial-gradient(ellipse at 98% 0%,#b4513416,transparent 58%),linear-gradient(110deg,transparent 75%,#e9a0470e)}
 body[data-element=ar]{--combat-pattern:radial-gradient(circle at 94% -2%,transparent 0 35px,#b47c3a13 36px 37px,transparent 38px),radial-gradient(circle at 92% 0%,transparent 0 57px,#b47c3a0f 58px 59px,transparent 60px)}
 body[data-avatar=true]{--accent:#a77933;--accent-deep:#62451e;--accent-soft:#f3e5bd;--line:#cbb37d;--combat-pattern:linear-gradient(90deg,#31759c11,#647b4d0b,#b451340b,#b47c3a11)}
 body[data-avatar=true] .combat-section-title{border-image:linear-gradient(90deg,#31759c,#647b4d,#b45134,#b47c3a) 1;border-width:3px 1px 1px;border-style:solid}
@@ -73,7 +73,7 @@ body[data-avatar=true]{--element-stroke:url("ornaments/avatar.svg");--frame-radi
 .combat-card h2{background-image:var(--element-stroke);background-size:55px 8px;background-repeat:repeat-x;background-position:left bottom;padding-bottom:16px}
 body[data-element=agua] .combat-card h2::before{border:2px solid var(--accent);border-radius:70% 70% 70% 0;background:var(--accent-soft);transform:rotate(-45deg);box-shadow:none}
 body[data-element=terra] .combat-card h2::before{border:2px solid var(--accent);border-radius:1px;background:var(--accent-soft);transform:none;box-shadow:none}
-body[data-element=fogo] .combat-card h2::before{width:17px;height:17px;border:0;clip-path:none;border-radius:0;background:url("ornaments/chama.svg") center/contain no-repeat;transform:none;box-shadow:none}
+body[data-element=fogo] .combat-card h2::before{display:none}
 body[data-element=ar] .combat-card h2::before{border:2px solid var(--accent);border-left-color:transparent;border-radius:50%;background:transparent;transform:rotate(-35deg);box-shadow:none}
 body[data-avatar=true] .combat-card h2::before{background:conic-gradient(#31759c 0 25%,#647b4d 25% 50%,#b45134 50% 75%,#b47c3a 75%);box-shadow:0 0 0 2px #fffaf0,0 0 0 3px var(--line)}
 .combat-vitals label{position:relative;overflow:hidden;border:2px solid var(--accent);border-radius:var(--frame-radius);padding-top:16px;background-image:var(--element-stroke),linear-gradient(145deg,#fffdf5,var(--accent-soft));background-size:55px 8px,auto;background-position:left top,center;background-repeat:repeat-x,no-repeat}
@@ -82,6 +82,11 @@ body[data-element=terra] .combat-vitals label,body[data-element=terra] .combat-c
 body[data-element=agua] .combat-vitals label,body[data-element=agua] .combat-card .prof-heading output,body[data-element=agua] .combat-card .dc-display output,body[data-element=agua] .combat-card .turn-results output{box-shadow:inset 0 0 0 3px #fffaf0,0 2px 0 #31759c45}
 body[data-element=fogo] .combat-vitals label,body[data-element=fogo] .combat-card .prof-heading output,body[data-element=fogo] .combat-card .dc-display output,body[data-element=fogo] .combat-card .turn-results output{box-shadow:inset 0 0 0 3px #fffaf0,3px 3px 0 #b4513430}
 body[data-element=ar] .combat-vitals label,body[data-element=ar] .combat-card .prof-heading output,body[data-element=ar] .combat-card .dc-display output,body[data-element=ar] .combat-card .turn-results output{box-shadow:inset 0 0 0 3px #fffaf0,0 0 0 3px #b47c3a24}
+body[data-element=fogo] .tabs button.active::after{background-size:100% 7px;background-repeat:no-repeat}
+body[data-element=fogo] .combat-section-title::before{background-size:100% 12px;background-repeat:no-repeat}
+body[data-element=fogo] .card.combat-card::before,body[data-element=fogo] .card.combat-card::after{background-size:100% 13px;background-repeat:no-repeat;opacity:.75}
+body[data-element=fogo] .combat-card h2{background-size:100% 8px;background-repeat:no-repeat}
+body[data-element=fogo] .combat-vitals label,body[data-element=fogo] .combat-card .prof-heading output,body[data-element=fogo] .combat-card .dc-display output,body[data-element=fogo] .combat-card .turn-results output{background-size:100% 8px,auto;background-repeat:no-repeat,no-repeat}
 @media(min-width:700px){.top{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}.brand-caption{display:block}.header-identity .header-name{width:clamp(160px,24vw,260px)}.combat-section-title{grid-template-columns:70px minmax(0,1fr);gap:18px}.combat-section-seal{width:70px;height:70px}}
 @media(max-width:380px){.emblem{width:30px;height:30px;padding:3px}.header-identity .header-name{width:clamp(98px,31vw,125px);font-size:15px}.header-level{font-size:11px}.header-level input{width:34px;height:34px;font-size:15px}.combat-section-title{grid-template-columns:46px minmax(0,1fr);gap:11px;padding:11px 12px 12px}.combat-section-seal{width:46px;height:46px;padding:5px}.combat-section-title h1{font-size:25px}.combat-section-copy small{font-size:8px}.combat-section-title p{font-size:11px}.combat-vitals label{padding:8px}.combat-vitals span{font-size:9px}.combat-vitals input{font-size:24px}}
 @media print{.combat-section-title{box-shadow:none}.card.combat-card,body.has-scene .card.combat-card{background:#fffaf0;box-shadow:none}.combat-card h2{font-size:15px}.combat-vitals span{min-height:0}}
