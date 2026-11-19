@@ -30,11 +30,9 @@ const sections=[
   {title:'Habilidades e talentos de classe',repeat:'classe',columns:['Nível','Nome','Descrição']},
   {title:'Talentos bônus',repeat:'bonus',columns:['Nível','Nome','Descrição']}
  ]},
- {id:'acoes',name:'Ações',description:'O que você pode fazer',cards:[
-  {title:'Ações e atividades',repeat:'acoes',columns:['Nome','Ações','Traços','Página','Descrição']},
-  {title:'Ações livres e reações',repeat:'reacoes',columns:['Nome','Tipo','Acionamento','Traços','Página','Descrição']}
- ]},
- {id:'anotacoes',name:'Anotações',description:'Espaço livre para o personagem',cards:[
+ {id:'inventario',name:'Inventário',description:'Moedas, itens e anotações',cards:[
+  {title:'Moedas',coins:true},
+  {title:'Inventário',inventory:true},
   {title:'Anotações',notes:true}
  ]}
 ];
@@ -44,6 +42,9 @@ if(!data.fields['cd-de-dobra-rank']&&data.fields['proficiencia-em-dobra-rank'])d
 let active='identidade';
 const expandedBendings=new WeakSet();
 const expandedTalents=new WeakSet();
+const expandedNotes=new WeakSet();
+const expandedNoteImages=new WeakSet();
+const expandedInventory=new WeakSet();
 const talentLists=new Set(['ancestralidade','talentosPericia','talentosGerais','classe','bonus']);
 const combatCards=new Set(sections.find(section=>section.id==='combate').cards);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -213,11 +214,43 @@ function renderTalent(item,index,list,columns,forPrint=false){
  const body='<div class="talent-body"><div class="repeat-head"><span>Talento '+(index+1)+'</span><button type="button" class="remove-btn" data-remove="'+list+'" data-index="'+index+'">Remover</button></div><div class="grid">'+columns.map(col=>field(col,'list:'+list+':'+index+':'+col,col==='Descrição'?'textarea':'text',col==='Descrição',item[col]||'')).join('')+'</div></div>';
  return '<details class="repeat-item talent-entry" data-talent-list="'+list+'" data-talent-index="'+index+'"'+(forPrint||expandedTalents.has(item)?' open':'')+'>'+summary+body+'</details>';
 }
+const coinKinds=[['pl','Platina'],['po','Ouro'],['pp','Prata'],['pc','Cobre']];
+function coinCount(kind){const value=Number(data.fields['moeda-'+kind]||0);return Number.isFinite(value)?Math.max(0,Math.trunc(value)):0}
+function coinTotal(){return ((coinCount('pl')*1000+coinCount('po')*100+coinCount('pp')*10+coinCount('pc'))/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function renderCoins(){
+ const rows=coinKinds.map(([kind,label])=>'<div class="coin-row"><label class="coin-main"><span>'+label+' <small>('+kind+')</small></span><input type="number" min="0" step="1" inputmode="numeric" data-coin="'+kind+'" aria-label="Peças de '+label.toLowerCase()+'" value="'+coinCount(kind)+'"></label><div class="coin-buttons" role="group" aria-label="Ajustar peças de '+label.toLowerCase()+'">'+[-10,-1,1,10].map(step=>'<button type="button" data-coin-change="'+kind+'" data-step="'+step+'" aria-label="'+(step>0?'Adicionar ':'Retirar ')+Math.abs(step)+' peças de '+label.toLowerCase()+'">'+(step>0?'+':'−')+Math.abs(step)+'</button>').join('')+'</div></div>').join('');
+ return '<div class="coin-grid">'+rows+'</div><div class="coin-total">Total equivalente <strong><output data-coin-total>'+coinTotal()+'</output> po</strong></div><div class="coin-conversion"><strong>Conversão de moedas</strong><span>1 pl = 10 po</span><span>1 po = 10 pp</span><span>1 pp = 10 pc</span></div>';
+}
+function renderInventoryItem(item,index,forPrint=false){
+ const name=item.Nome?.trim()||'Item '+(index+1),quantity=item.Quantidade??1,category=item.Categoria||'Outro';
+ const options=['Segurado','Consumível','Vestido','Tesouro','Outro'].map(value=>'<option value="'+value+'"'+(category===value?' selected':'')+'>'+value+'</option>').join('');
+ const summary='<summary class="inventory-summary"><strong data-inventory-summary-name="'+index+'">'+esc(name)+'</strong><span data-inventory-summary-quantity="'+index+'">×'+esc(quantity)+'</span>'+(item.EmCombate?'<small>Combate</small>':'')+'<span class="inventory-chevron" aria-hidden="true"></span></summary>';
+ const fields='<div class="grid">'+field('Nome','list:inventario:'+index+':Nome','text',false,item.Nome||'')+'<label class="field"><span>Categoria</span><select data-field="list:inventario:'+index+':Categoria">'+options+'</select></label>'+field('Quantidade','list:inventario:'+index+':Quantidade','number',false,quantity)+field('Volume','list:inventario:'+index+':Volume','text',false,item.Volume||'')+field('Preço / valor','list:inventario:'+index+':Preco','text',false,item.Preco||'')+field('Descrição','list:inventario:'+index+':Descricao','textarea',true,item.Descricao||'')+'</div>';
+ const checks='<div class="inventory-checks"><label><input type="checkbox" data-inventory-combat="'+index+'"'+(item.EmCombate?' checked':'')+'> Mostrar em combate</label><label><input type="checkbox" data-inventory-invested="'+index+'"'+(item.Investido?' checked':'')+'> Investido</label></div>';
+ return '<details class="inventory-entry" data-inventory-index="'+index+'"'+(forPrint||expandedInventory.has(item)?' open':'')+'>'+summary+'<div class="inventory-body"><div class="repeat-head"><span>Item '+(index+1)+'</span><button type="button" class="remove-btn" data-remove="inventario" data-index="'+index+'">Remover</button></div>'+fields+checks+'</div></details>';
+}
+const validNoteImage=value=>/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(value||'');
+function renderNote(item,index,forPrint=false){
+ const image=validNoteImage(item.Imagem)?'<details class="note-image-toggle"'+(forPrint||expandedNoteImages.has(item)?' open':'')+'><summary>Imagem anexada</summary><img src="'+esc(item.Imagem)+'" alt="Imagem da nota '+(index+1)+'"></details>':'';
+ const title=item.Titulo?.trim()||'Nota '+(index+1),inputId=(forPrint?'print-':'')+'note-image-'+index;
+ const summary='<summary class="note-summary"><strong data-note-summary-title="'+index+'">'+esc(title)+'</strong>'+(image?'<small>Imagem</small>':'')+'<span class="note-chevron" aria-hidden="true"></span></summary>';
+ return '<details class="note-entry" data-note-index="'+index+'"'+(forPrint||expandedNotes.has(item)?' open':'')+'>'+summary+'<div class="note-body"><div class="repeat-head"><span>Nota '+(index+1)+'</span><button type="button" class="remove-btn" data-remove="anotacoes" data-index="'+index+'" aria-label="Remover nota '+(index+1)+'">Remover</button></div>'+field('Título','list:anotacoes:'+index+':Titulo','text',false,item.Titulo||'')+field('Texto','list:anotacoes:'+index+':Texto','textarea',true,item.Texto||'')+'<div class="note-image-actions"><label class="small-btn" for="'+inputId+'">'+(image?'Trocar imagem':'Adicionar imagem')+'</label><input id="'+inputId+'" type="file" accept="image/*" data-note-image-upload="'+index+'" hidden>'+(image?'<button type="button" class="remove-btn" data-remove-note-image="'+index+'">Remover imagem</button>':'')+'</div>'+image+'</div></details>';
+}
+function renderCombatItemsPanel(){
+ const items=(data.lists.inventario||[]).filter(item=>item.EmCombate);
+ const entries=items.length?items.map(item=>'<article class="combat-item"><strong>'+esc(item.Nome?.trim()||'Item sem nome')+'</strong><small>×'+esc(item.Quantidade??1)+' · '+esc(item.Categoria||'Outro')+(item.Volume?' · Volume '+esc(item.Volume):'')+'</small>'+(item.Descricao?'<p>'+esc(item.Descricao)+'</p>':'')+'</article>').join(''):'<p class="empty">Marque “Mostrar em combate” nos itens do Inventário.</p>';
+ return '<button type="button" id="combatItemsToggle" class="combat-items-toggle" aria-controls="combatItemsPanel" aria-expanded="false">Itens'+(items.length?'<small>'+items.length+'</small>':'')+'</button><div id="combatItemsBackdrop" class="combat-items-backdrop" hidden></div><aside id="combatItemsPanel" class="combat-items-panel" role="dialog" aria-modal="true" aria-labelledby="combatItemsTitle" hidden><div class="combat-items-head"><h2 id="combatItemsTitle">Itens de combate</h2><button type="button" id="combatItemsClose" aria-label="Fechar itens de combate">×</button></div><div class="combat-items-list">'+entries+'</div></aside>';
+}
 function renderCard(card,forPrint=false){
  let body='';
- if(card.notes){
+ if(card.coins){
+  body=renderCoins();
+ }else if(card.inventory){
+  const items=Array.isArray(data.lists.inventario)?data.lists.inventario:[];
+  body=(items.length?'<div class="inventory-list">'+items.map((item,index)=>renderInventoryItem(item,index,forPrint)).join('')+'</div>':'<p class="empty">Nenhum item adicionado.</p>')+'<button type="button" class="small-btn" data-add="inventario">+ Adicionar item</button>';
+ }else if(card.notes){
   const items=Array.isArray(data.lists.anotacoes)?data.lists.anotacoes:[];
-  body=items.length?'<div class="note-list">'+items.map((item,index)=>'<div class="note-entry"><div class="repeat-head"><strong>Nota '+(index+1)+'</strong><button type="button" class="remove-btn" data-remove="anotacoes" data-index="'+index+'" aria-label="Remover nota '+(index+1)+'">Remover</button></div>'+field('Título','list:anotacoes:'+index+':Titulo','text',false,item.Titulo||'')+field('Texto','list:anotacoes:'+index+':Texto','textarea',true,item.Texto||'')+'</div>').join('')+'</div>':'<p class="empty">Nenhuma anotação ainda.</p>';
+  body=items.length?'<div class="note-list">'+items.map((item,index)=>renderNote(item,index,forPrint)).join('')+'</div>':'<p class="empty">Nenhuma anotação ainda.</p>';
   body+='<button type="button" class="small-btn" data-add="anotacoes">+ Adicionar anotação</button>';
  }else if(card.bendings){
   const items=data.lists.tecnicas||[];
@@ -285,10 +318,11 @@ function render(){
  migrateNotes();
  const section=sections.find(s=>s.id===active);
  if(active==='tecnicas')ensureBendingBanners();
+ document.body.classList.remove('combat-items-open');
  bendingBannerObserver.disconnect();
  document.querySelector('#tabs').innerHTML=sections.map(s=>'<button data-tab="'+s.id+'" class="'+(s.id===active?'active':'')+'" aria-current="'+(s.id===active?'page':'false')+'">'+s.name+'</button>').join('');
  const heading=active==='combate'?'<div class="section-title combat-section-title"><span class="combat-section-seal" aria-hidden="true">'+elementSeal(visualElement())+'</span><div class="combat-section-copy"><small>REGISTRO DE COMBATE</small><h1>'+section.name+'</h1><p>'+section.description+'</p></div></div>':'<div class="section-title"><h1>'+section.name+'</h1><p>'+section.description+'</p></div>';
- document.querySelector('#content').innerHTML=heading+section.cards.map(card=>renderCard(card)).join('');
+ document.querySelector('#content').innerHTML=heading+section.cards.map(card=>renderCard(card)).join('')+(active==='combate'?renderCombatItemsPanel():'');
  document.querySelectorAll('#content .bending-entry.has-banner').forEach(entry=>{
   entry.style.setProperty('--rotated-banner-width',entry.offsetHeight+'px');
   entry.style.setProperty('--rotated-banner-height',entry.offsetWidth+'px');
@@ -305,7 +339,7 @@ function selectTab(id){
  render();
  const tabs=document.querySelector('#tabs');
  const selected=tabs.querySelector('[data-tab="'+id+'"]');
- if(selected)tabs.scrollTo({left:selected.offsetLeft-(tabs.clientWidth-selected.clientWidth)/2,behavior:'smooth'});
+ if(selected)tabs.scrollTo({left:selected.offsetLeft-(tabs.clientWidth-selected.clientWidth)/2,behavior:'auto'});
  window.scrollTo(0,0);
 }
 const swipeArea=document.querySelector('#content');
@@ -331,6 +365,7 @@ document.addEventListener('input',e=>{
  const el=e.target;
  if(el.id==='heroName')data.fields['nome-do-personagem']=el.value;
  else if(el.id==='heroLevelInput')data.fields.nivel=el.value;
+ else if(el.dataset.coin){data.fields['moeda-'+el.dataset.coin]=el.value;const total=document.querySelector('[data-coin-total]');if(total)total.textContent=coinTotal()}
  else if(el.dataset.key)data.fields[el.dataset.key]=el.value;
  else if(el.dataset.field){
   if(el.dataset.field.startsWith('list:')){const [,list,index,column]=el.dataset.field.split(':');data.lists[list][Number(index)][column]=el.value}
@@ -339,14 +374,23 @@ document.addEventListener('input',e=>{
  if(el.dataset.field==='nivel')document.querySelector('#heroLevelInput').value=el.value;
  if(el.dataset.field==='nome-do-personagem')document.querySelector('#heroName').value=el.value;
  if(el.dataset.field?.startsWith('list:tecnicas:')&&el.dataset.field.endsWith(':Nome')){const index=Number(el.dataset.field.split(':')[2]);const summary=document.querySelector('[data-bending-summary-name="'+index+'"]');if(summary)summary.textContent=el.value.trim()||'Dobra '+(index+1)}
+ if(el.dataset.field?.startsWith('list:anotacoes:')&&el.dataset.field.endsWith(':Titulo')){const index=Number(el.dataset.field.split(':')[2]);const summary=document.querySelector('[data-note-summary-title="'+index+'"]');if(summary)summary.textContent=el.value.trim()||'Nota '+(index+1)}
+ if(el.dataset.field?.startsWith('list:inventario:')){const [,list,index,column]=el.dataset.field.split(':');if(column==='Nome'){const summary=document.querySelector('[data-inventory-summary-name="'+index+'"]');if(summary)summary.textContent=el.value.trim()||'Item '+(Number(index)+1)}if(column==='Quantidade'){const summary=document.querySelector('[data-inventory-summary-quantity="'+index+'"]');if(summary)summary.textContent='×'+(el.value||'0')}}
  if(el.dataset.field?.startsWith('list:')){const [,list,index,column]=el.dataset.field.split(':');if(talentLists.has(list)&&(column==='Nome'||column==='Nível')){const summary=document.querySelector('[data-talent-summary-'+(column==='Nome'?'name':'level')+'="'+list+':'+index+'"]');if(summary)summary.textContent=column==='Nome'?(el.value.trim()||'Talento '+(Number(index)+1)):'Nível '+(el.value||'—')}}
  if(el.dataset.field?.endsWith('-valor')){const name=el.dataset.field.slice(0,-6);const out=document.querySelector('[data-mod="'+name+'"]');if(out)out.textContent=modifier(el.value);data.fields[name+'-mod']=el.value===''?'':Math.floor((Number(el.value)-10)/2)}
  if(el.id==='heroLevelInput'){const levelField=document.querySelector('[data-field="nivel"]');if(levelField)levelField.value=el.value}
  refreshTotals();
  save();
 });
-document.addEventListener('toggle',e=>{const entry=e.target;if(!entry.isConnected||entry.closest('#printSheet'))return;const bending=entry.matches?.('.bending-entry');const talent=entry.matches?.('.talent-entry');if(!bending&&!talent)return;const item=bending?data.lists.tecnicas?.[Number(entry.dataset.bendingIndex)]:data.lists[entry.dataset.talentList]?.[Number(entry.dataset.talentIndex)];const expanded=bending?expandedBendings:expandedTalents;if(item){if(entry.open)expanded.add(item);else expanded.delete(item)}},true);
+document.addEventListener('toggle',e=>{const entry=e.target;if(!entry.isConnected||entry.closest('#printSheet'))return;let item,expanded;if(entry.matches('.bending-entry')){item=data.lists.tecnicas?.[Number(entry.dataset.bendingIndex)];expanded=expandedBendings}else if(entry.matches('.talent-entry')){item=data.lists[entry.dataset.talentList]?.[Number(entry.dataset.talentIndex)];expanded=expandedTalents}else if(entry.matches('.inventory-entry')){item=data.lists.inventario?.[Number(entry.dataset.inventoryIndex)];expanded=expandedInventory}else if(entry.matches('.note-entry')){item=data.lists.anotacoes?.[Number(entry.dataset.noteIndex)];expanded=expandedNotes}else if(entry.matches('.note-image-toggle')){item=data.lists.anotacoes?.[Number(entry.closest('.note-entry')?.dataset.noteIndex)];expanded=expandedNoteImages}if(item&&expanded){if(entry.open)expanded.add(item);else expanded.delete(item)}},true);
 document.addEventListener('change',e=>{if(e.target.id==='keyAttribute'){data.fields.atributoChave=e.target.value;save();render()}if(e.target.id==='elementPicker'){data.fields.elemento=e.target.value;for(const item of data.lists.tecnicas||[]){item.Banner=randomBanner(e.target.value);item.BannerElement=e.target.value}save();render()}if(e.target.id==='backgroundPicker'){data.fields.planoFundo=e.target.value;if(e.target.value!=='osel')data.fields.estadoAvatar=false;save();render()}if(e.target.id==='raisedShield'){data.fields.escudoErguido=e.target.checked;save();refreshTotals()}if(e.target.dataset.armor){data.fields.caCategoria=e.target.value;save();render()}if(e.target.dataset.dieOwner!=null){const item=data.lists.tecnicas[Number(e.target.dataset.dieOwner)];item.Dados[Number(e.target.dataset.dieIndex)]=e.target.value;save();render()}if(e.target.dataset.field?.startsWith('list:tecnicas:')){const [,list,index,column]=e.target.dataset.field.split(':');const item=data.lists[list][Number(index)];item[column]=e.target.value;if(column==='Elemento'){item.Banner=randomBanner(e.target.value);item.BannerElement=e.target.value}if(column==='Elevado'&&e.target.value==='sim'){item.ElevadoTipo??='dado';item.ElevadoDado??='1d4'}if(column==='ElevadoTipo'&&e.target.value==='dado')item.ElevadoDado??='1d4';save();render()}});
+document.addEventListener('change',e=>{
+ const el=e.target;
+ if(el.hasAttribute('data-coin')){el.value=String(coinCount(el.dataset.coin));data.fields['moeda-'+el.dataset.coin]=el.value;document.querySelector('[data-coin-total]').textContent=coinTotal();save()}
+ if(el.dataset.field?.startsWith('list:inventario:')&&el.dataset.field.endsWith(':Quantidade')){const index=Number(el.dataset.field.split(':')[2]);el.value=String(Math.max(0,Math.trunc(Number(el.value)||0)));data.lists.inventario[index].Quantidade=el.value;const summary=document.querySelector('[data-inventory-summary-quantity="'+index+'"]');if(summary)summary.textContent='×'+el.value;save()}
+ if(el.hasAttribute('data-inventory-combat')){const item=data.lists.inventario?.[Number(el.dataset.inventoryCombat)];if(item){item.EmCombate=el.checked;save();render()}}
+ if(el.hasAttribute('data-inventory-invested')){const item=data.lists.inventario?.[Number(el.dataset.inventoryInvested)];if(item){item.Investido=el.checked;save()}}
+});
 async function imageDataUrl(file,maxSize,quality){
  const source=URL.createObjectURL(file);
  try{
@@ -360,6 +404,21 @@ async function imageDataUrl(file,maxSize,quality){
   return canvas.toDataURL('image/jpeg',quality);
  }finally{URL.revokeObjectURL(source)}
 }
+document.addEventListener('change',async e=>{
+ const input=e.target;
+ if(!input.hasAttribute('data-note-image-upload'))return;
+ const file=input.files[0],index=Number(input.dataset.noteImageUpload),item=data.lists.anotacoes?.[index];
+ input.value='';
+ if(!file||!item)return;
+ try{
+  const image=await imageDataUrl(file,1200,.72);
+  if(data.lists.anotacoes?.[index]!==item)return;
+  const previous=item.Imagem;
+  item.Imagem=image;
+  expandedNotes.add(item);expandedNoteImages.add(item);
+  try{save();render()}catch{item.Imagem=previous;render();alert('Não há espaço para salvar esta imagem neste aparelho. Tente uma imagem menor.')}
+ }catch{alert('Não foi possível abrir esta imagem.')}
+});
 document.addEventListener('change',async e=>{
  if(e.target.id!=='customImageFile'||!e.target.files[0])return;
  try{
@@ -383,7 +442,17 @@ document.querySelector('#bannerUploadFile').addEventListener('change',async e=>{
   try{save();render()}catch{list.pop();alert('Não há espaço para salvar este banner neste aparelho. Tente uma imagem menor.')}
  }catch{alert('Não foi possível abrir o banner.')}
 });
+function setCombatItemsOpen(open){
+ const panel=document.querySelector('#combatItemsPanel'),backdrop=document.querySelector('#combatItemsBackdrop'),toggle=document.querySelector('#combatItemsToggle');
+ if(!panel||!backdrop||!toggle)return;
+ panel.hidden=!open;backdrop.hidden=!open;toggle.setAttribute('aria-expanded',String(open));
+ document.body.classList.toggle('combat-items-open',open);
+ (open?document.querySelector('#combatItemsClose'):toggle).focus({preventScroll:true});
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('combat-items-open'))setCombatItemsOpen(false)});
 document.addEventListener('click',e=>{
+ if(e.target.closest('#combatItemsToggle'))setCombatItemsOpen(true);
+ if(e.target.closest('#combatItemsClose,#combatItemsBackdrop'))setCombatItemsOpen(false);
  const avatarButton=e.target.closest('[data-avatar-toggle]');if(avatarButton&&data.fields.planoFundo==='osel'){data.fields.estadoAvatar=!data.fields.estadoAvatar;save();render()}
  if(e.target.closest('[data-use-custom]')){data.fields.planoFundo='custom';data.fields.estadoAvatar=false;save();render()}
  if(e.target.closest('[data-remove-custom]')){delete data.fields.imagemPersonalizada;if(data.fields.planoFundo==='custom')data.fields.planoFundo='';save();render()}
@@ -393,10 +462,23 @@ document.addEventListener('click',e=>{
  if(e.target.id==='cancelBannerDialog')document.querySelector('#bannerDialog').close();
  const bannerElement=e.target.closest('[data-banner-upload-element]');if(bannerElement){pendingBannerElement=bannerElement.dataset.bannerUploadElement;document.querySelector('#bannerDialog').close();document.querySelector('#bannerUploadFile').click()}
  const deleteBanner=e.target.closest('[data-delete-banner]');if(deleteBanner){const [element,id]=deleteBanner.dataset.deleteBanner.split(':');const list=data.fields.bannersPersonalizados?.[element];if(list){const index=list.findIndex(item=>item.id===id);if(index>=0){list.splice(index,1);for(const item of data.lists.tecnicas||[])if(item.Banner==='custom:'+id){item.Banner=randomBanner(element);item.BannerElement=element}save();render()}}}
+ const coinButton=e.target.closest('[data-coin-change]');if(coinButton){const kind=coinButton.dataset.coinChange,step=Number(coinButton.dataset.step);if(coinKinds.some(([code])=>code===kind)&&[-10,-1,1,10].includes(step)){const value=Math.max(0,coinCount(kind)+step);data.fields['moeda-'+kind]=value;document.querySelector('[data-coin="'+kind+'"]').value=value;document.querySelector('[data-coin-total]').textContent=coinTotal();save()}}
+ const removeNoteImage=e.target.closest('[data-remove-note-image]');if(removeNoteImage){const item=data.lists.anotacoes?.[Number(removeNoteImage.dataset.removeNoteImage)];if(item){delete item.Imagem;expandedNoteImages.delete(item);save();render()}}
  const temporary=e.target.closest('[data-temp-adjust]');if(temporary){const name=temporaryNames.get(temporary.dataset.tempAdjust),step=Number(temporary.dataset.step);if(name&&(step===1||step===-1)){data.fields[tempKeyFor(name)]=temporaryModifier(name)+step;refreshTotals();save()}}
  const rank=e.target.closest('[data-rank]');if(rank){const key=rankKeyFor(['CD de dobra',...Object.keys(defenseAttributes),...Object.keys(skillAttributes)].find(n=>slug(n)===rank.dataset.rank));data.fields[key]=data.fields[key]===rank.dataset.rankValue?'':rank.dataset.rankValue;save();const row=rank.closest('.prof-row');row.querySelectorAll('[data-rank]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.rankValue===data.fields[key])));refreshTotals()}
  const tab=e.target.closest('[data-tab]');if(tab)selectTab(tab.dataset.tab);
- const add=e.target.closest('[data-add]');if(add){const element=data.fields.planoFundo==='osel'?'':data.fields.elemento;const item=add.dataset.add==='tecnicas'?{Grau:'1',Tipo:'Movimento',Teste:'Acerto',Elemento:element,Banner:randomBanner(element),BannerElement:element}:{};(data.lists[add.dataset.add]??=[]).push(item);if(add.dataset.add==='tecnicas')expandedBendings.add(item);if(talentLists.has(add.dataset.add))expandedTalents.add(item);save();render();if(add.dataset.add==='anotacoes')document.querySelector('[data-field="list:anotacoes:'+(data.lists.anotacoes.length-1)+':Titulo"]')?.focus()}
+ const add=e.target.closest('[data-add]');if(add){
+  const list=add.dataset.add,element=data.fields.planoFundo==='osel'?'':data.fields.elemento;
+  const item=list==='tecnicas'?{Grau:'1',Tipo:'Movimento',Teste:'Acerto',Elemento:element,Banner:randomBanner(element),BannerElement:element}:list==='inventario'?{Quantidade:'1',Categoria:'Outro'}:{};
+  (data.lists[list]??=[]).push(item);
+  if(list==='tecnicas')expandedBendings.add(item);
+  if(list==='anotacoes')expandedNotes.add(item);
+  if(list==='inventario')expandedInventory.add(item);
+  if(talentLists.has(list))expandedTalents.add(item);
+  save();render();
+  if(list==='anotacoes')document.querySelector('[data-field="list:anotacoes:'+(data.lists.anotacoes.length-1)+':Titulo"]')?.focus();
+  if(list==='inventario')document.querySelector('[data-field="list:inventario:'+(data.lists.inventario.length-1)+':Nome"]')?.focus();
+ }
  const remove=e.target.closest('[data-remove]');if(remove){data.lists[remove.dataset.remove].splice(Number(remove.dataset.index),1);save();render()}
 });
 const menu=document.querySelector('#menu'),menuBtn=document.querySelector('#menuBtn');
