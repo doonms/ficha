@@ -127,3 +127,15 @@ body.avatar-active .header-identity .emblem{background:radial-gradient(circle,#f
 @media(min-width:700px){.top .brand{visibility:visible}.brand-caption strong{font-size:22px}.header-identity{gap:14px;padding:6px 17px}.header-identity .emblem{width:45px;height:45px}.header-identity .header-name{width:clamp(160px,24vw,260px);font-size:21px}.header-level input{width:43px;height:34px}}
 @media(max-width:380px){.top{padding:0 10px}.header-identity{gap:6px;padding:5px 8px}.header-identity .emblem{width:30px;height:30px}.header-identity .header-name{width:clamp(98px,31vw,125px);font-size:15px}.header-identity small{font-size:8px}.header-level input{width:34px;height:28px;font-size:15px}.combat-card h2{font-size:20px}}
 @media print{.section-title h1{font-size:25px}.card h2{font-size:17px}}
+
+/* Compact temporary modifiers stay beside their calculated values. */
+.temp-adjust{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-height:34px;margin:-2px 0 9px;white-space:nowrap}
+.temp-adjust small{font:700 10px/1.2 var(--ui-face);color:var(--muted)}
+.temp-adjust b{display:inline-block;min-width:2.2ch;text-align:center;color:var(--accent-deep);font-size:11px}
+.temp-buttons{display:flex;gap:4px}
+.temp-buttons button{display:grid;place-items:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:6px;background:#fffdf5;color:var(--accent-deep);font:700 19px/1 var(--ui-face);touch-action:manipulation}
+.temp-buttons button:active{background:var(--accent-soft)}
+.temp-buttons button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.card>.temp-adjust{justify-content:flex-start;margin:10px 0 0}
+@media(max-width:380px){.temp-adjust{gap:5px}.temp-adjust small{font-size:9px}.temp-buttons button{width:31px;height:31px}}
+@media print{.temp-adjust{justify-content:flex-start;min-height:0;margin:2px 0 5px}.temp-buttons{display:none}}

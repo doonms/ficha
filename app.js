@@ -51,6 +51,7 @@ const slug=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').re
 const modifier=value=>value===''||value==null?'—':(Math.floor((Number(value)-10)/2)>0?'+':'')+Math.floor((Number(value)-10)/2);
 const skillAttributes={'Acrobatismo':'Destreza','Atletismo':'Força','Dissimulação':'Carisma','Diplomacia':'Carisma','Furtividade':'Destreza','Intimidação':'Carisma','Ladroagem':'Destreza','Manufatura':'Inteligência','Medicina':'Sabedoria','Natureza':'Sabedoria','Performance':'Carisma','Sociedade':'Inteligência','Sobrevivência':'Sabedoria','Espiritualismo':'Sabedoria','Dobra de água':'Sabedoria','Dobra de ar':'Sabedoria','Dobra de fogo':'Sabedoria','Dobra de terra':'Sabedoria'};
 const defenseAttributes={'Percepção':'Sabedoria','Classe de Armadura':'Destreza','Proficiência em dobra':'chave','Fortitude':'Constituição','Reflexos':'Destreza','Vontade':'Sabedoria'};
+const temporaryNames=new Map([...Object.keys(skillAttributes),...Object.keys(defenseAttributes),'CD de dobra'].map(name=>[slug(name),name]));
 const rankBonus={treinado:2,especialista:4,mestre:6,lendario:8};
 const backgroundFiles={agua:'água plano.png',ar:'ar plano.png',fogo:'fogo plano.png',terra:'terra  plano.png',osel:'osel plano normal.png',rudeus:'rudeus plano.png',shien:'Shien plano.png',sion:'sion plano.png'};
 const bannerLabels={agua:'água',ar:'ar',fogo:'fogo',terra:'terra'};
@@ -126,6 +127,8 @@ function applyBackground(){
  if(bannerFile){banner.style.backgroundImage='linear-gradient(#170f0d08,#170f0d22),url("Nova%20pasta/'+encodeURIComponent(bannerFile)+'")';banner.setAttribute('aria-label','Banner da dobra de '+({agua:'água',ar:'ar',fogo:'fogo',terra:'terra'}[element]))}
 }
 const rankKeyFor=name=>name==='Classe de Armadura'?'classe-de-armadura-'+slug(data.fields.caCategoria||'Sem armadura')+'-rank':name==='Proficiência em dobra'?'cd-de-dobra-rank':slug(name)+'-rank';
+const tempKeyFor=name=>'temporario-'+slug(name);
+function temporaryModifier(name){const value=Number(data.fields[tempKeyFor(name)]||0);return Number.isFinite(value)?Math.trunc(value):0}
 function totalFor(name,attribute){
  const rank=data.fields[rankKeyFor(name)];
  if(!rank)return '—';
@@ -139,7 +142,7 @@ function totalFor(name,attribute){
   const cap=data.fields.caDexCap;
   if(cap!==''&&cap!=null)attributeMod=Math.min(attributeMod,Number(cap));
  }
- let total=base+level+rankBonus[rank]+attributeMod;
+ let total=base+level+rankBonus[rank]+attributeMod+temporaryModifier(name);
  if(name==='Classe de Armadura'){
   total+=Number(data.fields.caItem||0)+Number(data.fields.caOutros||0)-Number(data.fields.caPenalidade||0);
   if(data.fields.escudoErguido)total+=Number(data.fields.caEscudo||0);
@@ -151,20 +154,32 @@ function bendingBase(){
  const attribute=data.fields.atributoChave;
  const score=data.fields[slug(attribute||'')+'-valor'];
  if(!rank||!attribute||score===''||score==null)return null;
- return Number(data.fields.nivel||1)+rankBonus[rank]+Math.floor((Number(score)-10)/2);
+ return Number(data.fields.nivel||1)+rankBonus[rank]+Math.floor((Number(score)-10)/2)+temporaryModifier('CD de dobra');
 }
 function signed(value){return value>0?'+'+value:String(value)}
 function bendingDC(){const base=bendingBase();return base==null?'—':String(10+base)}
 function turnBending(penalty){const total=totalFor('Proficiência em dobra','chave');return total==='—'?'—':signed(Number(total)-penalty)}
+function temporaryControl(name){
+ const key=slug(name);
+ return '<div class="temp-adjust" role="group" aria-label="Modificador temporário de '+esc(name)+'"><small>Mod. temporário <b data-temp-value="'+key+'">'+signed(temporaryModifier(name))+'</b></small><div class="temp-buttons"><button type="button" data-temp-adjust="'+key+'" data-step="-1" aria-label="Diminuir modificador temporário de '+esc(name)+' em 1">−</button><button type="button" data-temp-adjust="'+key+'" data-step="1" aria-label="Aumentar modificador temporário de '+esc(name)+' em 1">+</button></div></div>';
+}
 function proficiencyRow(name,attribute){
  const key=slug(name),rank=data.fields[rankKeyFor(name)]||'';
- return '<div class="prof-row"><div class="prof-heading"><strong>'+esc(name)+'</strong><span>'+esc(attribute==='chave'?(data.fields.atributoChave||'Atributo chave'):attribute)+'</span><output data-total="'+key+'">'+totalFor(name,attribute)+'</output></div><div class="rank-buttons" role="group" aria-label="Proficiência em '+esc(name)+'">'+Object.keys(rankBonus).map(r=>'<button type="button" data-rank="'+key+'" data-rank-value="'+r+'" aria-pressed="'+(rank===r)+'">'+r+'</button>').join('')+'</div></div>';
+ return '<div class="prof-row"><div class="prof-heading"><strong>'+esc(name)+'</strong><span>'+esc(attribute==='chave'?(data.fields.atributoChave||'Atributo chave'):attribute)+'</span><output data-total="'+key+'">'+totalFor(name,attribute)+'</output></div>'+temporaryControl(name)+'<div class="rank-buttons" role="group" aria-label="Proficiência em '+esc(name)+'">'+Object.keys(rankBonus).map(r=>'<button type="button" data-rank="'+key+'" data-rank-value="'+r+'" aria-pressed="'+(rank===r)+'">'+r+'</button>').join('')+'</div></div>';
 }
 function bendingDCRow(){
  const name='CD de dobra',key=slug(name),rank=data.fields[rankKeyFor(name)]||'';
- return '<div class="prof-row dc-in-group"><div class="prof-heading"><strong>CD de dobra</strong><output data-bending-dc>'+bendingDC()+'</output></div><div class="rank-buttons" role="group" aria-label="Proficiência em CD de dobra">'+Object.keys(rankBonus).map(r=>'<button type="button" data-rank="'+key+'" data-rank-value="'+r+'" aria-pressed="'+(rank===r)+'">'+r+'</button>').join('')+'</div></div>';
+ return '<div class="prof-row dc-in-group"><div class="prof-heading"><strong>CD de dobra</strong><output data-bending-dc>'+bendingDC()+'</output></div>'+temporaryControl(name)+'<div class="rank-buttons" role="group" aria-label="Proficiência em CD de dobra">'+Object.keys(rankBonus).map(r=>'<button type="button" data-rank="'+key+'" data-rank-value="'+r+'" aria-pressed="'+(rank===r)+'">'+r+'</button>').join('')+'</div></div>';
 }
-function refreshTotals(){document.querySelectorAll('[data-total]').forEach(el=>{const name=[...Object.keys(skillAttributes),...Object.keys(defenseAttributes)].find(n=>slug(n)===el.dataset.total);if(name)el.textContent=totalFor(name,skillAttributes[name]||defenseAttributes[name])});document.querySelectorAll('[data-bending-dc],[data-bending-entry-dc]').forEach(el=>el.textContent=bendingDC());document.querySelectorAll('[data-turn-bending],[data-bending-attack]').forEach(el=>el.textContent=turnBending(Number(el.dataset.turnBending??el.dataset.bendingAttack)));document.querySelectorAll('[data-bending-level]').forEach(el=>el.textContent=bendingLevel());document.querySelectorAll('[data-elevation-index]').forEach(el=>el.textContent=elevationFor(data.lists.tecnicas?.[Number(el.dataset.elevationIndex)]||{}));document.querySelectorAll('[data-damage-index],[data-bending-summary-damage]').forEach(el=>{const index=Number(el.dataset.damageIndex??el.dataset.bendingSummaryDamage);const damage=damageFor(data.lists.tecnicas?.[index]||{});const isSummary=el.hasAttribute('data-bending-summary-damage');el.textContent=isSummary&&damage==='—'?'':damage;if(isSummary)el.hidden=damage==='—'})}
+function refreshTotals(){
+ document.querySelectorAll('[data-total]').forEach(el=>{const name=temporaryNames.get(el.dataset.total);if(name)el.textContent=totalFor(name,skillAttributes[name]||defenseAttributes[name])});
+ document.querySelectorAll('[data-bending-dc],[data-bending-entry-dc]').forEach(el=>el.textContent=bendingDC());
+ document.querySelectorAll('[data-turn-bending],[data-bending-attack]').forEach(el=>el.textContent=turnBending(Number(el.dataset.turnBending??el.dataset.bendingAttack)));
+ document.querySelectorAll('[data-temp-value]').forEach(el=>{const name=temporaryNames.get(el.dataset.tempValue);if(name)el.textContent=signed(temporaryModifier(name))});
+ document.querySelectorAll('[data-bending-level]').forEach(el=>el.textContent=bendingLevel());
+ document.querySelectorAll('[data-elevation-index]').forEach(el=>el.textContent=elevationFor(data.lists.tecnicas?.[Number(el.dataset.elevationIndex)]||{}));
+ document.querySelectorAll('[data-damage-index],[data-bending-summary-damage]').forEach(el=>{const index=Number(el.dataset.damageIndex??el.dataset.bendingSummaryDamage);const damage=damageFor(data.lists.tecnicas?.[index]||{});const isSummary=el.hasAttribute('data-bending-summary-damage');el.textContent=isSummary&&damage==='—'?'':damage;if(isSummary)el.hidden=damage==='—'});
+}
 function field(label,key,type='text',wide=false,value=''){
  const val=esc(value??'');
  const control=type==='textarea'?'<textarea data-field="'+esc(key)+'">'+val+'</textarea>':'<input data-field="'+esc(key)+'" type="'+type+'" '+(type==='number'?'inputmode="numeric" ':'')+'value="'+val+'">';
@@ -239,9 +254,9 @@ function renderCard(card,forPrint=false){
    field('Dureza do escudo', 'dureza-do-escudo','number',false,data.fields['dureza-do-escudo']??'')+
    '</div><label class="shield-toggle"><input id="raisedShield" type="checkbox" '+(data.fields.escudoErguido?'checked':'')+'> Escudo erguido</label><p class="attribute-help">CA = 10 + Destreza (até o teto) + proficiência na categoria usada + bônus de item + outros bônus − penalidades. O bônus do escudo só entra quando estiver erguido.</p>';
  }else if(card.defenseGroup){
-  body='<div class="defense-group">'+proficiencyRow('Classe de Armadura','Destreza')+bendingDCRow()+'<div class="bending-turns"><div class="prof-row"><div class="prof-heading"><strong>Proficiência em dobra</strong><span>'+esc(data.fields.atributoChave||'Atributo chave')+'</span><output data-total="proficiencia-em-dobra">'+totalFor('Proficiência em dobra','chave')+'</output></div></div><div class="turn-results"><div><span>2ª dobra</span><output data-turn-bending="5">'+turnBending(5)+'</output></div><div><span>3ª dobra</span><output data-turn-bending="10">'+turnBending(10)+'</output></div></div></div></div>';
+  body='<div class="defense-group">'+proficiencyRow('Classe de Armadura','Destreza')+bendingDCRow()+'<div class="bending-turns"><div class="prof-row"><div class="prof-heading"><strong>Proficiência em dobra</strong><span>'+esc(data.fields.atributoChave||'Atributo chave')+'</span><output data-total="proficiencia-em-dobra">'+totalFor('Proficiência em dobra','chave')+'</output></div>'+temporaryControl('Proficiência em dobra')+'</div><div class="turn-results"><div><span>2ª dobra</span><output data-turn-bending="5">'+turnBending(5)+'</output></div><div><span>3ª dobra</span><output data-turn-bending="10">'+turnBending(10)+'</output></div></div></div></div>';
  }else if(card.bendingDC){
-  body='<div class="dc-display"><output data-bending-dc>'+bendingDC()+'</output></div>';
+  body='<div class="dc-display"><output data-bending-dc>'+bendingDC()+'</output></div>'+temporaryControl('CD de dobra');
  }else if(card.skill||card.composite){
   body='<div class="prof-list">'+card.fields.map(name=>proficiencyRow(name,card.skill?skillAttributes[name]:defenseAttributes[name])).join('')+'</div>';
  }else{
@@ -378,6 +393,7 @@ document.addEventListener('click',e=>{
  if(e.target.id==='cancelBannerDialog')document.querySelector('#bannerDialog').close();
  const bannerElement=e.target.closest('[data-banner-upload-element]');if(bannerElement){pendingBannerElement=bannerElement.dataset.bannerUploadElement;document.querySelector('#bannerDialog').close();document.querySelector('#bannerUploadFile').click()}
  const deleteBanner=e.target.closest('[data-delete-banner]');if(deleteBanner){const [element,id]=deleteBanner.dataset.deleteBanner.split(':');const list=data.fields.bannersPersonalizados?.[element];if(list){const index=list.findIndex(item=>item.id===id);if(index>=0){list.splice(index,1);for(const item of data.lists.tecnicas||[])if(item.Banner==='custom:'+id){item.Banner=randomBanner(element);item.BannerElement=element}save();render()}}}
+ const temporary=e.target.closest('[data-temp-adjust]');if(temporary){const name=temporaryNames.get(temporary.dataset.tempAdjust),step=Number(temporary.dataset.step);if(name&&(step===1||step===-1)){data.fields[tempKeyFor(name)]=temporaryModifier(name)+step;refreshTotals();save()}}
  const rank=e.target.closest('[data-rank]');if(rank){const key=rankKeyFor(['CD de dobra',...Object.keys(defenseAttributes),...Object.keys(skillAttributes)].find(n=>slug(n)===rank.dataset.rank));data.fields[key]=data.fields[key]===rank.dataset.rankValue?'':rank.dataset.rankValue;save();const row=rank.closest('.prof-row');row.querySelectorAll('[data-rank]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.rankValue===data.fields[key])));refreshTotals()}
  const tab=e.target.closest('[data-tab]');if(tab)selectTab(tab.dataset.tab);
  const add=e.target.closest('[data-add]');if(add){const element=data.fields.planoFundo==='osel'?'':data.fields.elemento;const item=add.dataset.add==='tecnicas'?{Grau:'1',Tipo:'Movimento',Teste:'Acerto',Elemento:element,Banner:randomBanner(element),BannerElement:element}:{};(data.lists[add.dataset.add]??=[]).push(item);if(add.dataset.add==='tecnicas')expandedBendings.add(item);if(talentLists.has(add.dataset.add))expandedTalents.add(item);save();render();if(add.dataset.add==='anotacoes')document.querySelector('[data-field="list:anotacoes:'+(data.lists.anotacoes.length-1)+':Titulo"]')?.focus()}
