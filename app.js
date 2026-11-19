@@ -34,12 +34,14 @@ const sections=[
   {title:'Moedas',coins:true},
   {title:'Inventário',inventory:true},
   {title:'Anotações',notes:true}
- ]}
+ ]},
+ {id:'mapa',name:'Mapa',description:'Explore o mundo de Avatar',cards:[]}
 ];
 let data={fields:{},lists:{}};
 try{const saved=JSON.parse(localStorage.getItem(KEY));if(saved&&typeof saved==='object')data={fields:saved.fields||{},lists:saved.lists||{}}}catch{}
 if(!data.fields['cd-de-dobra-rank']&&data.fields['proficiencia-em-dobra-rank'])data.fields['cd-de-dobra-rank']=data.fields['proficiencia-em-dobra-rank'];
 let active='identidade';
+let mapLoaded=false;
 const expandedBendings=new WeakSet();
 const expandedTalents=new WeakSet();
 const expandedNotes=new WeakSet();
@@ -318,6 +320,10 @@ function migrateNotes(){
  delete data.fields.anotacoes;
  save();
 }
+function renderMap(){
+ const frame=mapLoaded?'<iframe class="world-map-frame" title="Mapa interativo de Avatar" src="https://html.itch.zone/html/18742227/index.html" allow="fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>':'<div class="world-map-intro"><div class="world-map-seals" aria-hidden="true">'+['agua','terra','fogo','ar'].map(element=>'<span>'+elementSeal(element)+'</span>').join('')+'</div><h2>Explore as quatro nações</h2><p>Abra o mapa interativo aqui dentro da ficha.</p><button type="button" class="world-map-load" data-load-map>Carregar mapa</button><small>Requer internet. O primeiro carregamento pode consumir cerca de 155 MB.</small></div>';
+ return '<section class="card world-map-card"><div class="world-map-head"><div><span class="world-map-kicker">ATLAS DAS QUATRO NAÇÕES</span><h2>Mapa interativo</h2></div>'+(mapLoaded?'<button type="button" class="world-map-expand" data-map-expand aria-label="Ampliar mapa" aria-pressed="false">Ampliar mapa</button>':'')+'</div><div class="world-map-viewport">'+frame+'</div><div class="world-map-footer"><span>Mapa criado por <a href="https://iyiyo.itch.io/avatarlastairbendermap" target="_blank" rel="noopener noreferrer">iYiyo</a> no itch.io.</span>'+(mapLoaded?'<span>Arraste para explorar. No celular, vire a tela para ter mais espaço.</span>':'')+'</div></section>';
+}
 function render(){
  migrateNotes();
  const section=sections.find(s=>s.id===active);
@@ -326,7 +332,7 @@ function render(){
  bendingBannerObserver.disconnect();
  document.querySelector('#tabs').innerHTML=sections.map(s=>'<button data-tab="'+s.id+'" class="'+(s.id===active?'active':'')+'" aria-current="'+(s.id===active?'page':'false')+'">'+s.name+'</button>').join('');
  const heading=active==='combate'?'<div class="section-title combat-section-title"><span class="combat-section-seal" aria-hidden="true">'+elementSeal(visualElement())+'</span><div class="combat-section-copy"><small>REGISTRO DE COMBATE</small><h1>'+section.name+'</h1><p>'+section.description+'</p></div></div>':'<div class="section-title"><h1>'+section.name+'</h1><p>'+section.description+'</p></div>';
- document.querySelector('#content').innerHTML=heading+section.cards.map(card=>renderCard(card)).join('')+(active==='combate'?renderCombatItemsPanel():'');
+ document.querySelector('#content').innerHTML=heading+(active==='mapa'?renderMap():section.cards.map(card=>renderCard(card)).join('')+(active==='combate'?renderCombatItemsPanel():''));
  document.querySelectorAll('#content .bending-entry.has-banner').forEach(entry=>{
   entry.style.setProperty('--rotated-banner-width',entry.offsetHeight+'px');
   entry.style.setProperty('--rotated-banner-height',entry.offsetWidth+'px');
@@ -339,6 +345,7 @@ function render(){
 }
 function selectTab(id){
  if(!sections.some(section=>section.id===id))return;
+ if(id!==active){mapLoaded=false;document.body.classList.remove('map-expanded')}
  active=id;
  render();
  const tabs=document.querySelector('#tabs');
@@ -458,6 +465,8 @@ function setCombatItemsOpen(open){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('combat-items-open'))setCombatItemsOpen(false)});
 document.addEventListener('click',e=>{
+ if(e.target.closest('[data-load-map]')){mapLoaded=true;render()}
+ const mapExpand=e.target.closest('[data-map-expand]');if(mapExpand){const expanded=document.body.classList.toggle('map-expanded');mapExpand.textContent=expanded?'Reduzir mapa':'Ampliar mapa';mapExpand.setAttribute('aria-label',mapExpand.textContent);mapExpand.setAttribute('aria-pressed',String(expanded))}
  if(e.target.closest('#combatItemsToggle'))setCombatItemsOpen(true);
  if(e.target.closest('#combatItemsClose,#combatItemsBackdrop'))setCombatItemsOpen(false);
  const avatarButton=e.target.closest('[data-avatar-toggle]');if(avatarButton&&data.fields.planoFundo==='osel'){data.fields.estadoAvatar=!data.fields.estadoAvatar;save();render()}
@@ -495,7 +504,7 @@ document.querySelector('#exportBtn').onclick=()=>{const blob=new Blob([JSON.stri
 document.querySelector('#importBtn').onclick=()=>document.querySelector('#importFile').click();
 document.querySelector('#printBtn').onclick=()=>{
  const sheet=document.querySelector('#printSheet');
- sheet.innerHTML='<article class="print-page"><h1>Ficha Avateixons</h1>'+sections.map(s=>'<section class="print-section"><h2>'+esc(s.name)+'</h2>'+s.cards.map(card=>renderCard(card,true)).join('')+'</section>').join('')+'</article>';
+ sheet.innerHTML='<article class="print-page"><h1>Ficha Avateixons</h1>'+sections.filter(s=>s.id!=='mapa').map(s=>'<section class="print-section"><h2>'+esc(s.name)+'</h2>'+s.cards.map(card=>renderCard(card,true)).join('')+'</section>').join('')+'</article>';
  menu.hidden=true;
  window.print();
 };
