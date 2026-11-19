@@ -226,11 +226,11 @@ function renderCoins(){
 }
 function renderInventoryItem(item,index,forPrint=false){
  const name=item.Nome?.trim()||'Item '+(index+1),quantity=item.Quantidade??1,category=item.Categoria||'Outro';
- const options=['Segurado','Consumível','Vestido','Tesouro','Outro'].map(value=>'<option value="'+value+'"'+(category===value?' selected':'')+'>'+value+'</option>').join('');
- const summary='<summary class="inventory-summary"><strong data-inventory-summary-name="'+index+'">'+esc(name)+'</strong><span data-inventory-summary-quantity="'+index+'">×'+esc(quantity)+'</span>'+(item.Arma?'<small>Arma</small>':'')+(item.EmCombate?'<small>Combate</small>':'')+'<span class="inventory-chevron" aria-hidden="true"></span></summary>';
+ const options=['Segurado','Consumível','Vestido','Tesouro','Arma','Outro'].map(value=>'<option value="'+value+'"'+(category===value?' selected':'')+'>'+value+'</option>').join('');
+ const summary='<summary class="inventory-summary"><strong data-inventory-summary-name="'+index+'">'+esc(name)+'</strong><span data-inventory-summary-quantity="'+index+'">×'+esc(quantity)+'</span>'+(item.EmCombate?'<small>Combate</small>':'')+'<span class="inventory-chevron" aria-hidden="true"></span></summary>';
  const fields='<div class="grid">'+field('Nome','list:inventario:'+index+':Nome','text',false,item.Nome||'')+'<label class="field"><span>Categoria</span><select data-field="list:inventario:'+index+':Categoria">'+options+'</select></label>'+field('Quantidade','list:inventario:'+index+':Quantidade','number',false,quantity)+field('Volume','list:inventario:'+index+':Volume','text',false,item.Volume||'')+field('Preço / valor','list:inventario:'+index+':Preco','text',false,item.Preco||'')+field('Descrição','list:inventario:'+index+':Descricao','textarea',true,item.Descricao||'')+'</div>';
- const checks='<div class="inventory-checks"><label><input type="checkbox" data-inventory-weapon="'+index+'"'+(item.Arma?' checked':'')+'> É arma</label><label><input type="checkbox" data-inventory-combat="'+index+'"'+(item.EmCombate?' checked':'')+'> Mostrar em combate</label><label><input type="checkbox" data-inventory-invested="'+index+'"'+(item.Investido?' checked':'')+'> Investido</label></div>';
- const weaponFields=item.Arma?'<div class="inventory-weapon"><h3>Dados da arma</h3><div class="grid">'+field('Dano','list:inventario:'+index+':Dano','text',false,item.Dano||'')+field('Tipo de dano','list:inventario:'+index+':TipoDano','text',false,item.TipoDano||'')+field('Alcance','list:inventario:'+index+':Alcance','text',false,item.Alcance||'')+field('Traços','list:inventario:'+index+':Tracos','text',true,item.Tracos||'')+'</div></div>':'';
+ const checks='<div class="inventory-checks"><label><input type="checkbox" data-inventory-combat="'+index+'"'+(item.EmCombate?' checked':'')+'> Mostrar em combate</label><label><input type="checkbox" data-inventory-invested="'+index+'"'+(item.Investido?' checked':'')+'> Investido</label></div>';
+ const weaponFields=category==='Arma'?'<div class="inventory-weapon"><h3>Dados da arma</h3><div class="grid">'+field('Dano','list:inventario:'+index+':Dano','text',false,item.Dano||'')+field('Tipo de dano','list:inventario:'+index+':TipoDano','text',false,item.TipoDano||'')+field('Alcance','list:inventario:'+index+':Alcance','text',false,item.Alcance||'')+field('Traços','list:inventario:'+index+':Tracos','text',true,item.Tracos||'')+'</div></div>':'';
  const hasImage=validImageDataUrl(item.Imagem),inputId=(forPrint?'print-':'')+'inventory-image-'+index;
  const imageActions='<div class="inventory-image-actions"><label class="small-btn" for="'+inputId+'">'+(hasImage?'Trocar imagem':'Adicionar imagem')+'</label><input id="'+inputId+'" type="file" accept="image/*" data-inventory-image-upload="'+index+'" hidden>'+(hasImage?'<button type="button" class="remove-btn" data-remove-inventory-image="'+index+'">Remover imagem</button>':'')+'</div>';
  const image=hasImage?'<details class="inventory-image-toggle"'+(forPrint||expandedInventoryImages.has(item)?' open':'')+'><summary>Imagem do item</summary><img src="'+esc(item.Imagem)+'" alt="Imagem de '+esc(name)+'"></details>':'';
@@ -246,8 +246,8 @@ function renderNote(item,index,forPrint=false){
 function renderCombatItemsPanel(){
  const items=(data.lists.inventario||[]).filter(item=>item.EmCombate);
  const entries=items.length?items.map(item=>{
-  const details=item.Arma?[item.Dano&&'Dano: '+item.Dano,item.TipoDano&&'Tipo: '+item.TipoDano,item.Alcance&&'Alcance: '+item.Alcance,item.Tracos&&'Traços: '+item.Tracos].filter(Boolean).map(esc).join(' · '):'';
-  const category=item.Arma?'Arma'+(item.Categoria&&item.Categoria!=='Outro'?' · '+esc(item.Categoria):''):esc(item.Categoria||'Outro');
+  const details=item.Categoria==='Arma'?[item.Dano&&'Dano: '+item.Dano,item.TipoDano&&'Tipo: '+item.TipoDano,item.Alcance&&'Alcance: '+item.Alcance,item.Tracos&&'Traços: '+item.Tracos].filter(Boolean).map(esc).join(' · '):'';
+  const category=esc(item.Categoria||'Outro');
   return '<article class="combat-item"><div class="combat-item-top">'+(validImageDataUrl(item.Imagem)?'<img class="combat-item-thumb" src="'+esc(item.Imagem)+'" alt="Imagem de '+esc(item.Nome?.trim()||'item sem nome')+'">':'')+'<div><strong>'+esc(item.Nome?.trim()||'Item sem nome')+'</strong><small>×'+esc(item.Quantidade??1)+' · '+category+(item.Volume?' · Volume '+esc(item.Volume):'')+'</small></div></div>'+(details?'<p class="combat-item-weapon">'+details+'</p>':'')+(item.Descricao?'<p>'+esc(item.Descricao)+'</p>':'')+'</article>';
  }).join(''):'<p class="empty">Marque “Mostrar em combate” nos itens do Inventário.</p>';
  return '<button type="button" id="combatItemsToggle" class="combat-items-toggle" aria-controls="combatItemsPanel" aria-expanded="false">Itens'+(items.length?'<small>'+items.length+'</small>':'')+'</button><div id="combatItemsBackdrop" class="combat-items-backdrop" hidden></div><aside id="combatItemsPanel" class="combat-items-panel" role="dialog" aria-modal="true" aria-labelledby="combatItemsTitle" hidden><div class="combat-items-head"><h2 id="combatItemsTitle">Itens de combate</h2><button type="button" id="combatItemsClose" aria-label="Fechar itens de combate">×</button></div><div class="combat-items-list">'+entries+'</div></aside>';
@@ -325,12 +325,26 @@ function migrateNotes(){
  delete data.fields.anotacoes;
  save();
 }
+function migrateInventoryWeapons(){
+ const items=data.lists.inventario;
+ if(!Array.isArray(items))return;
+ let changed=false;
+ for(const item of items){
+  if(item&&Object.prototype.hasOwnProperty.call(item,'Arma')){
+   if(item.Arma)item.Categoria='Arma';
+   delete item.Arma;
+   changed=true;
+  }
+ }
+ if(changed)save();
+}
 function renderMap(){
  const frame=mapLoaded?'<iframe class="world-map-frame" title="Mapa interativo de Avatar" src="https://html.itch.zone/html/18742227/index.html" referrerpolicy="strict-origin-when-cross-origin"></iframe>':'<div class="world-map-intro"><div class="world-map-seals" aria-hidden="true">'+['agua','terra','fogo','ar'].map(element=>'<span>'+elementSeal(element)+'</span>').join('')+'</div><h2>Explore as quatro nações</h2><p>Abra o mapa interativo aqui dentro da ficha.</p><button type="button" class="world-map-load" data-load-map>Carregar mapa</button><small>Requer internet. O primeiro carregamento pode consumir cerca de 155 MB.</small></div>';
  return '<section class="card world-map-card"><div class="world-map-head"><div><span class="world-map-kicker">ATLAS DAS QUATRO NAÇÕES</span><h2>Mapa interativo</h2></div>'+(mapLoaded?'<button type="button" class="world-map-expand" data-map-expand aria-label="Ampliar mapa" aria-pressed="false">Ampliar mapa</button>':'')+'</div><div class="world-map-viewport">'+frame+'</div><div class="world-map-footer"><span>Mapa criado por <a href="https://iyiyo.itch.io/avatarlastairbendermap" target="_blank" rel="noopener noreferrer">iYiyo</a> no itch.io.</span>'+(mapLoaded?'<span>Arraste para explorar. No celular, vire a tela para ter mais espaço.</span>':'')+'</div></section>';
 }
 function render(){
  migrateNotes();
+ migrateInventoryWeapons();
  const section=sections.find(s=>s.id===active);
  if(active==='tecnicas')ensureBendingBanners();
  document.body.classList.remove('combat-items-open');
@@ -403,9 +417,9 @@ document.addEventListener('change',e=>{if(e.target.id==='keyAttribute'){data.fie
 document.addEventListener('change',e=>{
  const el=e.target;
  if(el.hasAttribute('data-coin')){el.value=String(coinCount(el.dataset.coin));data.fields['moeda-'+el.dataset.coin]=el.value;document.querySelector('[data-coin-total]').textContent=coinTotal();save()}
+ if(el.dataset.field?.startsWith('list:inventario:')&&el.dataset.field.endsWith(':Categoria')){const index=Number(el.dataset.field.split(':')[2]);const item=data.lists.inventario?.[index];if(item){item.Categoria=el.value;save();render()}}
  if(el.dataset.field?.startsWith('list:inventario:')&&el.dataset.field.endsWith(':Quantidade')){const index=Number(el.dataset.field.split(':')[2]);el.value=String(Math.max(0,Math.trunc(Number(el.value)||0)));data.lists.inventario[index].Quantidade=el.value;const summary=document.querySelector('[data-inventory-summary-quantity="'+index+'"]');if(summary)summary.textContent='×'+el.value;save()}
  if(el.hasAttribute('data-inventory-combat')){const item=data.lists.inventario?.[Number(el.dataset.inventoryCombat)];if(item){item.EmCombate=el.checked;save();render()}}
- if(el.hasAttribute('data-inventory-weapon')){const item=data.lists.inventario?.[Number(el.dataset.inventoryWeapon)];if(item){item.Arma=el.checked;save();render()}}
  if(el.hasAttribute('data-inventory-invested')){const item=data.lists.inventario?.[Number(el.dataset.inventoryInvested)];if(item){item.Investido=el.checked;save()}}
 });
 async function imageDataUrl(file,maxSize,quality){
