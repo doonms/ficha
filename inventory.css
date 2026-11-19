@@ -27,13 +27,13 @@
 .inventory-checks label{display:flex;align-items:center;gap:8px;min-height:38px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:#fffaf0;color:var(--ink);font:700 12px var(--ui-face)}
 .inventory-checks input{width:18px;height:18px;accent-color:var(--accent-deep)}
 .note-body .field+.field{margin-top:11px}.note-body .field textarea{min-height:150px}
-.note-image-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:12px 0}
-.note-image-actions label{cursor:pointer}
-.note-image-toggle{margin-top:9px;border:1px solid var(--line);border-radius:8px;background:#fffaf0;overflow:hidden}
-.note-image-toggle summary{padding:10px 12px;cursor:pointer;color:var(--accent-deep);font:700 12px var(--ui-face)}
-.note-image-toggle[open] summary{border-bottom:1px solid var(--line)}
-.note-image-toggle img{display:block;width:auto;max-width:100%;max-height:70vh;margin:10px auto;object-fit:contain}
-.inventory-summary:focus-visible,.note-summary:focus-visible,.note-image-toggle summary:focus-visible,.coin-buttons button:focus-visible,.coin-main input:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.note-image-actions,.inventory-image-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:12px 0}
+.note-image-actions label,.inventory-image-actions label{cursor:pointer}
+.note-image-toggle,.inventory-image-toggle{margin-top:9px;border:1px solid var(--line);border-radius:8px;background:#fffaf0;overflow:hidden}
+.note-image-toggle summary,.inventory-image-toggle summary{padding:10px 12px;cursor:pointer;color:var(--accent-deep);font:700 12px var(--ui-face)}
+.note-image-toggle[open] summary,.inventory-image-toggle[open] summary{border-bottom:1px solid var(--line)}
+.note-image-toggle img,.inventory-image-toggle img{display:block;width:auto;max-width:100%;max-height:70vh;margin:10px auto;object-fit:contain}
+.inventory-summary:focus-visible,.note-summary:focus-visible,.note-image-toggle summary:focus-visible,.inventory-image-toggle summary:focus-visible,.coin-buttons button:focus-visible,.coin-main input:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
 .combat-items-toggle{position:fixed;right:0;top:48%;z-index:7;display:flex;flex-direction:column;align-items:center;justify-content:center;width:53px;height:53px;padding:2px;border:1px solid var(--accent);border-right:0;border-radius:9px 0 0 9px;background:var(--accent-deep);color:#fffaf0;box-shadow:0 3px 12px #3b261b45;font:800 12px var(--ui-face)}
 .combat-items-toggle small{font-size:10px;line-height:1.1;color:#fff4d7}
 .combat-items-backdrop{position:fixed;inset:0;z-index:8;background:#1b151899}
@@ -45,9 +45,11 @@ body.combat-items-open{overflow:hidden}body.combat-items-open main{z-index:10}bo
 .combat-items-head button{flex:none;width:40px;height:40px;border:1px solid var(--line);border-radius:7px;background:#fffaf0;color:var(--accent-deep);font-size:24px}
 .combat-items-list{display:grid;align-content:start;gap:10px;overflow-y:auto;padding:14px}
 .combat-item{min-width:0;padding:12px;border:1px solid var(--line);border-radius:9px;background:#fffaf0}
+.combat-item-top{display:flex;align-items:flex-start;gap:10px}.combat-item-top>div{min-width:0;flex:1}
+.combat-item-thumb{display:block;flex:none;width:62px;height:62px;object-fit:cover;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
 .combat-item strong,.combat-item small{display:block;overflow-wrap:anywhere;font-family:var(--ui-face)}
 .combat-item strong{color:var(--accent-deep);font-size:15px}.combat-item small{margin-top:4px;color:var(--muted);font-size:11px}
 .combat-item p{margin:9px 0 0;color:var(--ink);font:12px/1.5 var(--ui-face);white-space:pre-wrap;overflow-wrap:anywhere}
 @media(min-width:700px){.coin-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.combat-items-panel{top:82px}}
 @media(max-width:380px){.inventory-summary,.note-summary{gap:5px;padding:9px}.coin-total output{font-size:17px}}
-@media print{.coin-buttons,.note-image-actions,.combat-items-toggle,.combat-items-backdrop,.combat-items-panel{display:none!important}.inventory-entry,.note-entry{break-inside:avoid-page}.inventory-summary,.note-summary{min-height:0;padding:6px 8px}.inventory-body,.note-body{padding:8px}.note-image-toggle img{max-height:90mm}.coin-total{margin:5px 0;padding:5px 8px}}
+@media print{.coin-buttons,.note-image-actions,.inventory-image-actions,.combat-items-toggle,.combat-items-backdrop,.combat-items-panel{display:none!important}.inventory-entry,.note-entry{break-inside:avoid-page}.inventory-summary,.note-summary{min-height:0;padding:6px 8px}.inventory-body,.note-body{padding:8px}.note-image-toggle img,.inventory-image-toggle img{max-height:90mm}.coin-total{margin:5px 0;padding:5px 8px}}

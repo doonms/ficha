@@ -45,6 +45,7 @@ const expandedTalents=new WeakSet();
 const expandedNotes=new WeakSet();
 const expandedNoteImages=new WeakSet();
 const expandedInventory=new WeakSet();
+const expandedInventoryImages=new WeakSet();
 const talentLists=new Set(['ancestralidade','talentosPericia','talentosGerais','classe','bonus']);
 const combatCards=new Set(sections.find(section=>section.id==='combate').cards);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -227,18 +228,21 @@ function renderInventoryItem(item,index,forPrint=false){
  const summary='<summary class="inventory-summary"><strong data-inventory-summary-name="'+index+'">'+esc(name)+'</strong><span data-inventory-summary-quantity="'+index+'">×'+esc(quantity)+'</span>'+(item.EmCombate?'<small>Combate</small>':'')+'<span class="inventory-chevron" aria-hidden="true"></span></summary>';
  const fields='<div class="grid">'+field('Nome','list:inventario:'+index+':Nome','text',false,item.Nome||'')+'<label class="field"><span>Categoria</span><select data-field="list:inventario:'+index+':Categoria">'+options+'</select></label>'+field('Quantidade','list:inventario:'+index+':Quantidade','number',false,quantity)+field('Volume','list:inventario:'+index+':Volume','text',false,item.Volume||'')+field('Preço / valor','list:inventario:'+index+':Preco','text',false,item.Preco||'')+field('Descrição','list:inventario:'+index+':Descricao','textarea',true,item.Descricao||'')+'</div>';
  const checks='<div class="inventory-checks"><label><input type="checkbox" data-inventory-combat="'+index+'"'+(item.EmCombate?' checked':'')+'> Mostrar em combate</label><label><input type="checkbox" data-inventory-invested="'+index+'"'+(item.Investido?' checked':'')+'> Investido</label></div>';
- return '<details class="inventory-entry" data-inventory-index="'+index+'"'+(forPrint||expandedInventory.has(item)?' open':'')+'>'+summary+'<div class="inventory-body"><div class="repeat-head"><span>Item '+(index+1)+'</span><button type="button" class="remove-btn" data-remove="inventario" data-index="'+index+'">Remover</button></div>'+fields+checks+'</div></details>';
+ const hasImage=validImageDataUrl(item.Imagem),inputId=(forPrint?'print-':'')+'inventory-image-'+index;
+ const imageActions='<div class="inventory-image-actions"><label class="small-btn" for="'+inputId+'">'+(hasImage?'Trocar imagem':'Adicionar imagem')+'</label><input id="'+inputId+'" type="file" accept="image/*" data-inventory-image-upload="'+index+'" hidden>'+(hasImage?'<button type="button" class="remove-btn" data-remove-inventory-image="'+index+'">Remover imagem</button>':'')+'</div>';
+ const image=hasImage?'<details class="inventory-image-toggle"'+(forPrint||expandedInventoryImages.has(item)?' open':'')+'><summary>Imagem do item</summary><img src="'+esc(item.Imagem)+'" alt="Imagem de '+esc(name)+'"></details>':'';
+ return '<details class="inventory-entry" data-inventory-index="'+index+'"'+(forPrint||expandedInventory.has(item)?' open':'')+'>'+summary+'<div class="inventory-body"><div class="repeat-head"><span>Item '+(index+1)+'</span><button type="button" class="remove-btn" data-remove="inventario" data-index="'+index+'">Remover</button></div>'+fields+checks+imageActions+image+'</div></details>';
 }
-const validNoteImage=value=>/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(value||'');
+const validImageDataUrl=value=>/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(value||'');
 function renderNote(item,index,forPrint=false){
- const image=validNoteImage(item.Imagem)?'<details class="note-image-toggle"'+(forPrint||expandedNoteImages.has(item)?' open':'')+'><summary>Imagem anexada</summary><img src="'+esc(item.Imagem)+'" alt="Imagem da nota '+(index+1)+'"></details>':'';
+ const image=validImageDataUrl(item.Imagem)?'<details class="note-image-toggle"'+(forPrint||expandedNoteImages.has(item)?' open':'')+'><summary>Imagem anexada</summary><img src="'+esc(item.Imagem)+'" alt="Imagem da nota '+(index+1)+'"></details>':'';
  const title=item.Titulo?.trim()||'Nota '+(index+1),inputId=(forPrint?'print-':'')+'note-image-'+index;
  const summary='<summary class="note-summary"><strong data-note-summary-title="'+index+'">'+esc(title)+'</strong>'+(image?'<small>Imagem</small>':'')+'<span class="note-chevron" aria-hidden="true"></span></summary>';
  return '<details class="note-entry" data-note-index="'+index+'"'+(forPrint||expandedNotes.has(item)?' open':'')+'>'+summary+'<div class="note-body"><div class="repeat-head"><span>Nota '+(index+1)+'</span><button type="button" class="remove-btn" data-remove="anotacoes" data-index="'+index+'" aria-label="Remover nota '+(index+1)+'">Remover</button></div>'+field('Título','list:anotacoes:'+index+':Titulo','text',false,item.Titulo||'')+field('Texto','list:anotacoes:'+index+':Texto','textarea',true,item.Texto||'')+'<div class="note-image-actions"><label class="small-btn" for="'+inputId+'">'+(image?'Trocar imagem':'Adicionar imagem')+'</label><input id="'+inputId+'" type="file" accept="image/*" data-note-image-upload="'+index+'" hidden>'+(image?'<button type="button" class="remove-btn" data-remove-note-image="'+index+'">Remover imagem</button>':'')+'</div>'+image+'</div></details>';
 }
 function renderCombatItemsPanel(){
  const items=(data.lists.inventario||[]).filter(item=>item.EmCombate);
- const entries=items.length?items.map(item=>'<article class="combat-item"><strong>'+esc(item.Nome?.trim()||'Item sem nome')+'</strong><small>×'+esc(item.Quantidade??1)+' · '+esc(item.Categoria||'Outro')+(item.Volume?' · Volume '+esc(item.Volume):'')+'</small>'+(item.Descricao?'<p>'+esc(item.Descricao)+'</p>':'')+'</article>').join(''):'<p class="empty">Marque “Mostrar em combate” nos itens do Inventário.</p>';
+ const entries=items.length?items.map(item=>'<article class="combat-item"><div class="combat-item-top">'+(validImageDataUrl(item.Imagem)?'<img class="combat-item-thumb" src="'+esc(item.Imagem)+'" alt="Imagem de '+esc(item.Nome?.trim()||'item sem nome')+'">':'')+'<div><strong>'+esc(item.Nome?.trim()||'Item sem nome')+'</strong><small>×'+esc(item.Quantidade??1)+' · '+esc(item.Categoria||'Outro')+(item.Volume?' · Volume '+esc(item.Volume):'')+'</small></div></div>'+(item.Descricao?'<p>'+esc(item.Descricao)+'</p>':'')+'</article>').join(''):'<p class="empty">Marque “Mostrar em combate” nos itens do Inventário.</p>';
  return '<button type="button" id="combatItemsToggle" class="combat-items-toggle" aria-controls="combatItemsPanel" aria-expanded="false">Itens'+(items.length?'<small>'+items.length+'</small>':'')+'</button><div id="combatItemsBackdrop" class="combat-items-backdrop" hidden></div><aside id="combatItemsPanel" class="combat-items-panel" role="dialog" aria-modal="true" aria-labelledby="combatItemsTitle" hidden><div class="combat-items-head"><h2 id="combatItemsTitle">Itens de combate</h2><button type="button" id="combatItemsClose" aria-label="Fechar itens de combate">×</button></div><div class="combat-items-list">'+entries+'</div></aside>';
 }
 function renderCard(card,forPrint=false){
@@ -382,7 +386,7 @@ document.addEventListener('input',e=>{
  refreshTotals();
  save();
 });
-document.addEventListener('toggle',e=>{const entry=e.target;if(!entry.isConnected||entry.closest('#printSheet'))return;let item,expanded;if(entry.matches('.bending-entry')){item=data.lists.tecnicas?.[Number(entry.dataset.bendingIndex)];expanded=expandedBendings}else if(entry.matches('.talent-entry')){item=data.lists[entry.dataset.talentList]?.[Number(entry.dataset.talentIndex)];expanded=expandedTalents}else if(entry.matches('.inventory-entry')){item=data.lists.inventario?.[Number(entry.dataset.inventoryIndex)];expanded=expandedInventory}else if(entry.matches('.note-entry')){item=data.lists.anotacoes?.[Number(entry.dataset.noteIndex)];expanded=expandedNotes}else if(entry.matches('.note-image-toggle')){item=data.lists.anotacoes?.[Number(entry.closest('.note-entry')?.dataset.noteIndex)];expanded=expandedNoteImages}if(item&&expanded){if(entry.open)expanded.add(item);else expanded.delete(item)}},true);
+document.addEventListener('toggle',e=>{const entry=e.target;if(!entry.isConnected||entry.closest('#printSheet'))return;let item,expanded;if(entry.matches('.bending-entry')){item=data.lists.tecnicas?.[Number(entry.dataset.bendingIndex)];expanded=expandedBendings}else if(entry.matches('.talent-entry')){item=data.lists[entry.dataset.talentList]?.[Number(entry.dataset.talentIndex)];expanded=expandedTalents}else if(entry.matches('.inventory-entry')){item=data.lists.inventario?.[Number(entry.dataset.inventoryIndex)];expanded=expandedInventory}else if(entry.matches('.inventory-image-toggle')){item=data.lists.inventario?.[Number(entry.closest('.inventory-entry')?.dataset.inventoryIndex)];expanded=expandedInventoryImages}else if(entry.matches('.note-entry')){item=data.lists.anotacoes?.[Number(entry.dataset.noteIndex)];expanded=expandedNotes}else if(entry.matches('.note-image-toggle')){item=data.lists.anotacoes?.[Number(entry.closest('.note-entry')?.dataset.noteIndex)];expanded=expandedNoteImages}if(item&&expanded){if(entry.open)expanded.add(item);else expanded.delete(item)}},true);
 document.addEventListener('change',e=>{if(e.target.id==='keyAttribute'){data.fields.atributoChave=e.target.value;save();render()}if(e.target.id==='elementPicker'){data.fields.elemento=e.target.value;for(const item of data.lists.tecnicas||[]){item.Banner=randomBanner(e.target.value);item.BannerElement=e.target.value}save();render()}if(e.target.id==='backgroundPicker'){data.fields.planoFundo=e.target.value;if(e.target.value!=='osel')data.fields.estadoAvatar=false;save();render()}if(e.target.id==='raisedShield'){data.fields.escudoErguido=e.target.checked;save();refreshTotals()}if(e.target.dataset.armor){data.fields.caCategoria=e.target.value;save();render()}if(e.target.dataset.dieOwner!=null){const item=data.lists.tecnicas[Number(e.target.dataset.dieOwner)];item.Dados[Number(e.target.dataset.dieIndex)]=e.target.value;save();render()}if(e.target.dataset.field?.startsWith('list:tecnicas:')){const [,list,index,column]=e.target.dataset.field.split(':');const item=data.lists[list][Number(index)];item[column]=e.target.value;if(column==='Elemento'){item.Banner=randomBanner(e.target.value);item.BannerElement=e.target.value}if(column==='Elevado'&&e.target.value==='sim'){item.ElevadoTipo??='dado';item.ElevadoDado??='1d4'}if(column==='ElevadoTipo'&&e.target.value==='dado')item.ElevadoDado??='1d4';save();render()}});
 document.addEventListener('change',e=>{
  const el=e.target;
@@ -406,16 +410,19 @@ async function imageDataUrl(file,maxSize,quality){
 }
 document.addEventListener('change',async e=>{
  const input=e.target;
- if(!input.hasAttribute('data-note-image-upload'))return;
- const file=input.files[0],index=Number(input.dataset.noteImageUpload),item=data.lists.anotacoes?.[index];
+ const isNote=input.hasAttribute('data-note-image-upload'),isInventory=input.hasAttribute('data-inventory-image-upload');
+ if(!isNote&&!isInventory)return;
+ const list=isNote?'anotacoes':'inventario',index=Number(isNote?input.dataset.noteImageUpload:input.dataset.inventoryImageUpload);
+ const file=input.files[0],item=data.lists[list]?.[index];
  input.value='';
  if(!file||!item)return;
  try{
-  const image=await imageDataUrl(file,1200,.72);
-  if(data.lists.anotacoes?.[index]!==item)return;
+  const image=await imageDataUrl(file,isNote?1200:900,isNote?0.72:0.68);
+  if(data.lists[list]?.[index]!==item)return;
   const previous=item.Imagem;
   item.Imagem=image;
-  expandedNotes.add(item);expandedNoteImages.add(item);
+  (isNote?expandedNotes:expandedInventory).add(item);
+  (isNote?expandedNoteImages:expandedInventoryImages).add(item);
   try{save();render()}catch{item.Imagem=previous;render();alert('Não há espaço para salvar esta imagem neste aparelho. Tente uma imagem menor.')}
  }catch{alert('Não foi possível abrir esta imagem.')}
 });
@@ -464,6 +471,7 @@ document.addEventListener('click',e=>{
  const deleteBanner=e.target.closest('[data-delete-banner]');if(deleteBanner){const [element,id]=deleteBanner.dataset.deleteBanner.split(':');const list=data.fields.bannersPersonalizados?.[element];if(list){const index=list.findIndex(item=>item.id===id);if(index>=0){list.splice(index,1);for(const item of data.lists.tecnicas||[])if(item.Banner==='custom:'+id){item.Banner=randomBanner(element);item.BannerElement=element}save();render()}}}
  const coinButton=e.target.closest('[data-coin-change]');if(coinButton){const kind=coinButton.dataset.coinChange,step=Number(coinButton.dataset.step);if(coinKinds.some(([code])=>code===kind)&&[-10,-1,1,10].includes(step)){const value=Math.max(0,coinCount(kind)+step);data.fields['moeda-'+kind]=value;document.querySelector('[data-coin="'+kind+'"]').value=value;document.querySelector('[data-coin-total]').textContent=coinTotal();save()}}
  const removeNoteImage=e.target.closest('[data-remove-note-image]');if(removeNoteImage){const item=data.lists.anotacoes?.[Number(removeNoteImage.dataset.removeNoteImage)];if(item){delete item.Imagem;expandedNoteImages.delete(item);save();render()}}
+ const removeInventoryImage=e.target.closest('[data-remove-inventory-image]');if(removeInventoryImage){const item=data.lists.inventario?.[Number(removeInventoryImage.dataset.removeInventoryImage)];if(item){delete item.Imagem;expandedInventoryImages.delete(item);save();render()}}
  const temporary=e.target.closest('[data-temp-adjust]');if(temporary){const name=temporaryNames.get(temporary.dataset.tempAdjust),step=Number(temporary.dataset.step);if(name&&(step===1||step===-1)){data.fields[tempKeyFor(name)]=temporaryModifier(name)+step;refreshTotals();save()}}
  const rank=e.target.closest('[data-rank]');if(rank){const key=rankKeyFor(['CD de dobra',...Object.keys(defenseAttributes),...Object.keys(skillAttributes)].find(n=>slug(n)===rank.dataset.rank));data.fields[key]=data.fields[key]===rank.dataset.rankValue?'':rank.dataset.rankValue;save();const row=rank.closest('.prof-row');row.querySelectorAll('[data-rank]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.rankValue===data.fields[key])));refreshTotals()}
  const tab=e.target.closest('[data-tab]');if(tab)selectTab(tab.dataset.tab);
