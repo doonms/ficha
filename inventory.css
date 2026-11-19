@@ -26,6 +26,9 @@
 .inventory-checks{display:grid;gap:5px;margin-top:12px}
 .inventory-checks label{display:flex;align-items:center;gap:8px;min-height:38px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:#fffaf0;color:var(--ink);font:700 12px var(--ui-face)}
 .inventory-checks input{width:18px;height:18px;accent-color:var(--accent-deep)}
+.inventory-weapon{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fffaf0}
+.inventory-weapon h3{margin:0 0 12px;color:var(--accent-deep);font:700 14px var(--ui-face)}
+.inventory-weapon .grid{gap:10px}
 .note-body .field+.field{margin-top:11px}.note-body .field textarea{min-height:150px}
 .note-image-actions,.inventory-image-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:12px 0}
 .note-image-actions label,.inventory-image-actions label{cursor:pointer}
@@ -50,6 +53,7 @@ body.combat-items-open{overflow:hidden}body.combat-items-open main{z-index:10}bo
 .combat-item strong,.combat-item small{display:block;overflow-wrap:anywhere;font-family:var(--ui-face)}
 .combat-item strong{color:var(--accent-deep);font-size:15px}.combat-item small{margin-top:4px;color:var(--muted);font-size:11px}
 .combat-item p{margin:9px 0 0;color:var(--ink);font:12px/1.5 var(--ui-face);white-space:pre-wrap;overflow-wrap:anywhere}
+.combat-item .combat-item-weapon{padding:8px;border-radius:6px;background:var(--accent-soft);font-weight:700}
 @media(min-width:700px){.coin-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.combat-items-panel{top:82px}}
 @media(max-width:380px){.inventory-summary,.note-summary{gap:5px;padding:9px}.coin-total output{font-size:17px}}
 @media print{.coin-buttons,.note-image-actions,.inventory-image-actions,.combat-items-toggle,.combat-items-backdrop,.combat-items-panel{display:none!important}.inventory-entry,.note-entry{break-inside:avoid-page}.inventory-summary,.note-summary{min-height:0;padding:6px 8px}.inventory-body,.note-body{padding:8px}.note-image-toggle img,.inventory-image-toggle img{max-height:90mm}.coin-total{margin:5px 0;padding:5px 8px}}

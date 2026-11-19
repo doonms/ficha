@@ -19,6 +19,8 @@
 .world-map-footer a{color:#574126;font-weight:700}
 body.map-expanded{overflow:hidden}
 body.map-expanded .world-map-card{position:fixed;inset:0;z-index:20;border-radius:0;display:flex;flex-direction:column}
+body.map-expanded .world-map-head{min-height:64px;padding-right:190px}
+body.map-expanded .world-map-expand{position:fixed;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));z-index:31;box-shadow:0 3px 12px #24190c80}
 body.map-expanded .world-map-viewport{flex:1;min-height:0;aspect-ratio:auto}
 body.map-expanded .world-map-footer{flex:none}
 @media(max-width:700px){.world-map-head{padding:12px 14px}.world-map-head h2{font-size:19px}.world-map-expand{font-size:12px;padding:9px 10px}.world-map-viewport{aspect-ratio:auto;height:min(70dvh,600px);min-height:360px}.world-map-intro{min-height:100%}.world-map-seals{gap:5px}.world-map-seals span{width:48px;height:48px}.world-map-seals svg{width:39px;height:39px}body.map-expanded .world-map-head{padding-top:max(12px,env(safe-area-inset-top))}body.map-expanded .world-map-footer{padding-bottom:max(10px,env(safe-area-inset-bottom))}}
