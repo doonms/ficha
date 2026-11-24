@@ -1,4 +1,7 @@
 const KEY='avateixons-ficha-v1';
+const PROFILES_KEY='avateixons-personagens-v1';
+const PROFILE_PREFIX='avateixons-ficha-personagem-';
+const ORIGINAL_PROFILE='original';
 const sections=[
  {id:'identidade',name:'Identidade',description:'Quem é seu personagem',cards:[
   {title:'Personagem',fields:['Nome do personagem','Nome do jogador','Idade','Nação','Origem','Pontos de experiência (XP)','Pontos de heroísmo','Ancestralidade e herança','Biografia','Dobra','Tamanho','Traços','Tendência']},
@@ -37,8 +40,21 @@ const sections=[
  ]},
  {id:'mapa',name:'Mapa',description:'Explore o mundo de Avatar',cards:[]}
 ];
-let data={fields:{},lists:{}};
-try{const saved=JSON.parse(localStorage.getItem(KEY));if(saved&&typeof saved==='object')data={fields:saved.fields||{},lists:saved.lists||{}}}catch{}
+const emptyCharacter=()=>({fields:{},lists:{}});
+const profileKey=id=>id===ORIGINAL_PROFILE?KEY:PROFILE_PREFIX+id;
+function readCharacter(id){
+ try{const saved=JSON.parse(localStorage.getItem(profileKey(id)));if(saved&&typeof saved==='object')return {fields:saved.fields||{},lists:saved.lists||{}}}catch{}
+ return emptyCharacter();
+}
+let profileIds=[ORIGINAL_PROFILE],activeProfileId=ORIGINAL_PROFILE;
+try{
+ const saved=JSON.parse(localStorage.getItem(PROFILES_KEY));
+ if(saved&&Array.isArray(saved.ids)){
+  const ids=[...new Set(saved.ids.filter(id=>typeof id==='string'&&(id===ORIGINAL_PROFILE||/^p-[a-z0-9-]+$/.test(id))))];
+  if(ids.length){profileIds=ids;activeProfileId=ids.includes(saved.activeId)?saved.activeId:ids[0]}
+ }
+}catch{}
+let data=readCharacter(activeProfileId);
 if(!data.fields['cd-de-dobra-rank']&&data.fields['proficiencia-em-dobra-rank'])data.fields['cd-de-dobra-rank']=data.fields['proficiencia-em-dobra-rank'];
 let active='identidade';
 let mapLoaded=false;
@@ -390,7 +406,57 @@ swipeArea.addEventListener('touchend',event=>{
  if(next>=0&&next<sections.length)selectTab(sections[next].id);
 },{passive:true});
 swipeArea.addEventListener('touchcancel',()=>{swipeStart=null},{passive:true});
-function save(){localStorage.setItem(KEY,JSON.stringify(data));document.querySelector('#saveNote').textContent='Ficha salva neste aparelho.'}
+function storageError(){document.querySelector('#saveNote').textContent='Não foi possível salvar. Exporte sua ficha para guardar uma cópia.'}
+function save(){
+ try{localStorage.setItem(profileKey(activeProfileId),JSON.stringify(data));document.querySelector('#saveNote').textContent='Ficha salva neste aparelho.'}
+ catch(error){storageError();throw error}
+}
+function renderCharactersList(){
+ document.querySelector('#charactersList').innerHTML=profileIds.map((id,index)=>{
+  const character=id===activeProfileId?data:readCharacter(id);
+  const name=String(character.fields['nome-do-personagem']||'').trim()||'Personagem '+(index+1);
+  const level=character.fields.nivel?'Nível '+esc(character.fields.nivel):'Nível não definido';
+  const element=character.fields.planoFundo==='osel'?'avatar':character.fields.elemento||'neutral';
+  const current=id===activeProfileId;
+  return '<div class="characters-row'+(current?' is-active':'')+'"><button type="button" class="characters-switch" data-character-switch="'+id+'" aria-current="'+current+'" aria-label="Abrir ficha de '+esc(name)+'"><span class="characters-seal" aria-hidden="true">'+elementSeal(element)+'</span><span class="characters-copy"><strong>'+esc(name)+'</strong><small>'+level+(current?' · Atual':'')+'</small></span></button>'+(profileIds.length>1?'<button type="button" class="characters-delete" data-character-delete="'+id+'" aria-label="Excluir '+esc(name)+'">Excluir</button>':'')+'</div>';
+ }).join('');
+}
+function createCharacter(character=emptyCharacter()){
+ try{save()}catch{return false}
+ const id='p-'+(crypto.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
+ const nextIds=[...profileIds,id];
+ try{
+  localStorage.setItem(profileKey(id),JSON.stringify(character));
+  localStorage.setItem(PROFILES_KEY,JSON.stringify({version:1,ids:nextIds,activeId:id}));
+ }catch{try{localStorage.removeItem(profileKey(id))}catch{}storageError();return false}
+ profileIds=nextIds;activeProfileId=id;data=character;active='identidade';mapLoaded=false;
+ document.body.classList.remove('map-expanded');
+ render();const dialog=document.querySelector('#charactersDialog');if(dialog.open)dialog.close();window.scrollTo(0,0);
+ return true;
+}
+function switchCharacter(id){
+ if(!profileIds.includes(id))return;
+ const dialog=document.querySelector('#charactersDialog');
+ if(id===activeProfileId){dialog.close();return}
+ try{save();localStorage.setItem(PROFILES_KEY,JSON.stringify({version:1,ids:profileIds,activeId:id}))}catch{storageError();return}
+ activeProfileId=id;data=readCharacter(id);mapLoaded=false;
+ document.body.classList.remove('map-expanded');
+ render();dialog.close();
+ document.querySelector('#saveNote').textContent='Personagem carregado neste aparelho.';
+}
+function deleteCharacter(id){
+ if(profileIds.length<2||!profileIds.includes(id))return;
+ const character=id===activeProfileId?data:readCharacter(id);
+ const name=String(character.fields['nome-do-personagem']||'').trim()||'este personagem';
+ if(!confirm('Excluir a ficha de '+name+' deste aparelho? Esta ação não pode ser desfeita.'))return;
+ const nextIds=profileIds.filter(profileId=>profileId!==id);
+ const nextActive=id===activeProfileId?nextIds[0]:activeProfileId;
+ try{localStorage.setItem(PROFILES_KEY,JSON.stringify({version:1,ids:nextIds,activeId:nextActive}))}catch{storageError();return}
+ try{localStorage.removeItem(profileKey(id))}catch{}
+ profileIds=nextIds;
+ if(id===activeProfileId){activeProfileId=nextActive;data=readCharacter(nextActive);mapLoaded=false;document.body.classList.remove('map-expanded');render()}
+ renderCharactersList();
+}
 document.addEventListener('input',e=>{
  const el=e.target;
  if(el.id==='heroName')data.fields['nome-do-personagem']=el.value;
@@ -456,8 +522,11 @@ document.addEventListener('change',async e=>{
 document.addEventListener('change',async e=>{
  if(e.target.id!=='customImageFile'||!e.target.files[0])return;
  try{
+  const targetData=data;
   const previous={image:data.fields.imagemPersonalizada,plan:data.fields.planoFundo,avatar:data.fields.estadoAvatar};
-  data.fields.imagemPersonalizada=await imageDataUrl(e.target.files[0],1600,.78);
+  const image=await imageDataUrl(e.target.files[0],1600,.78);
+  if(data!==targetData)return;
+  data.fields.imagemPersonalizada=image;
   data.fields.planoFundo='custom';
   data.fields.estadoAvatar=false;
   try{save();render()}catch{data.fields.imagemPersonalizada=previous.image;data.fields.planoFundo=previous.plan;data.fields.estadoAvatar=previous.avatar;alert('A imagem é grande demais para salvar neste aparelho. Tente uma imagem menor.')}
@@ -469,7 +538,9 @@ document.querySelector('#bannerUploadFile').addEventListener('change',async e=>{
  e.target.value='';
  if(!file||!bannerCounts[element])return;
  try{
+  const targetData=data;
   const image=await imageDataUrl(file,1400,.68);
+  if(data!==targetData)return;
   const entry={id:'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),name:file.name.replace(/\.[^.]+$/,'').slice(0,40)||'Banner próprio',image};
   const list=(data.fields.bannersPersonalizados??={})[element]??=[];
   list.push(entry);data.fields.bannersPersonalizados[element]=list;
@@ -525,7 +596,17 @@ document.addEventListener('click',e=>{
 });
 const menu=document.querySelector('#menu'),menuBtn=document.querySelector('#menuBtn');
 menuBtn.onclick=()=>{menu.hidden=!menu.hidden;menuBtn.setAttribute('aria-expanded',String(!menu.hidden))};
-document.querySelector('#exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({version:1,...data},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='ficha-avateixons.json';a.click();URL.revokeObjectURL(url);menu.hidden=true};
+const charactersDialog=document.querySelector('#charactersDialog'),charactersBtn=document.querySelector('#charactersBtn');
+charactersBtn.onclick=()=>{renderCharactersList();menu.hidden=true;menuBtn.setAttribute('aria-expanded','false');charactersDialog.showModal();charactersBtn.setAttribute('aria-expanded','true');charactersDialog.querySelector('[aria-current="true"]')?.focus({preventScroll:true})};
+document.querySelector('#charactersClose').onclick=()=>charactersDialog.close();
+charactersDialog.addEventListener('close',()=>charactersBtn.setAttribute('aria-expanded','false'));
+charactersDialog.addEventListener('click',e=>{
+ const switchButton=e.target.closest('[data-character-switch]');if(switchButton){switchCharacter(switchButton.dataset.characterSwitch);return}
+ const deleteButton=e.target.closest('[data-character-delete]');if(deleteButton){deleteCharacter(deleteButton.dataset.characterDelete);return}
+ if(e.target.closest('#addCharacterBtn')){createCharacter();return}
+ if(e.target===charactersDialog){const rect=charactersDialog.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)charactersDialog.close()}
+});
+document.querySelector('#exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({version:1,...data},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='ficha-'+(slug(data.fields['nome-do-personagem']||'personagem')||'personagem')+'.json';a.click();URL.revokeObjectURL(url);menu.hidden=true};
 document.querySelector('#importBtn').onclick=()=>document.querySelector('#importFile').click();
 document.querySelector('#printBtn').onclick=()=>{
  const sheet=document.querySelector('#printSheet');
@@ -534,7 +615,7 @@ document.querySelector('#printBtn').onclick=()=>{
  window.print();
 };
 window.addEventListener('afterprint',()=>{document.querySelector('#printSheet').innerHTML=''});
-document.querySelector('#importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const imported=JSON.parse(await file.text());if(!imported.fields||!imported.lists)throw Error();data={fields:imported.fields,lists:imported.lists};save();render();menu.hidden=true}catch{alert('Não foi possível importar esta ficha. Escolha um JSON exportado pelo aplicativo.')}e.target.value=''};
-document.querySelector('#clearBtn').onclick=()=>{if(confirm('Apagar todos os dados desta ficha neste aparelho?')){data={fields:{},lists:{}};save();render()}menu.hidden=true};
+document.querySelector('#importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const imported=JSON.parse(await file.text());if(!imported.fields||typeof imported.fields!=='object'||Array.isArray(imported.fields)||!imported.lists||typeof imported.lists!=='object'||Array.isArray(imported.lists))throw Error();if(!createCharacter({fields:imported.fields,lists:imported.lists})){alert('Não há espaço para salvar mais um personagem neste aparelho.');return}menu.hidden=true}catch{alert('Não foi possível importar esta ficha. Escolha um JSON exportado pelo aplicativo.')}finally{e.target.value=''}};
+document.querySelector('#clearBtn').onclick=()=>{if(confirm('Apagar todos os dados deste personagem neste aparelho?')){data=emptyCharacter();save();render()}menu.hidden=true};
 render();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});

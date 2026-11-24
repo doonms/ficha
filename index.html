@@ -17,21 +17,28 @@
   <link rel="stylesheet" href="avatar-ui.css">
   <link rel="stylesheet" href="inventory.css">
   <link rel="stylesheet" href="map.css">
+  <link rel="stylesheet" href="characters.css">
   <title>Ficha Avateixons</title>
 </head>
 <body>
   <header class="top">
-    <div class="brand" aria-label="Ficha Avateixons"><span class="brand-caption"><small>FICHA DE</small><strong>AVATEIXONS</strong></span></div>
+    <div class="brand" aria-label="Ficha Avateixons"><button type="button" id="charactersBtn" class="icon-button characters-button" aria-label="Trocar personagem" aria-haspopup="dialog" aria-controls="charactersDialog" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><span class="brand-caption"><small>FICHA DE</small><strong>AVATEIXONS</strong></span></div>
     <div class="header-identity"><span class="emblem" id="headerSeal" aria-hidden="true">◈</span><label><small>PERSONAGEM</small><input id="heroName" class="header-name" aria-label="Nome do personagem" placeholder="Nome do personagem"></label><label class="header-level"><small>NÍVEL</small><input id="heroLevelInput" type="number" min="1" inputmode="numeric" aria-label="Nível do personagem" placeholder="1"></label></div>
     <button id="menuBtn" class="icon-button" aria-label="Abrir opções" aria-expanded="false">⋮</button>
     <div id="menu" class="menu" hidden>
-      <button id="exportBtn">Exportar ficha (.json)</button>
-      <button id="importBtn">Importar ficha (.json)</button>
+      <button id="exportBtn">Exportar personagem (.json)</button>
+      <button id="importBtn">Importar personagem (.json)</button>
       <button id="printBtn">Imprimir ficha (A4)</button>
-      <button id="clearBtn">Limpar ficha</button>
+      <button id="clearBtn">Limpar personagem atual</button>
       <input id="importFile" type="file" accept="application/json,.json" hidden>
     </div>
   </header>
+  <dialog id="charactersDialog" class="characters-dialog" aria-labelledby="charactersTitle">
+    <div class="characters-head"><div><small>FICHAS SALVAS</small><h2 id="charactersTitle">Personagens</h2></div><button type="button" id="charactersClose" aria-label="Fechar personagens">×</button></div>
+    <div id="charactersList" class="characters-list"></div>
+    <button type="button" id="addCharacterBtn" class="characters-add">+ Novo personagem</button>
+    <p class="characters-hint">As fichas ficam salvas neste aparelho. Use Exportar personagem para guardar uma cópia.</p>
+  </dialog>
   <main>
     <div id="elementBanner" class="element-banner" role="img" hidden></div>
     <nav id="tabs" class="tabs" aria-label="Seções da ficha"></nav>
